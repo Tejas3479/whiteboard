@@ -5,7 +5,13 @@ import Link from 'next/link';
 import { Sparkles, Link as LinkIcon, Sun, Moon, Download, Check, FileCode } from 'lucide-react';
 import { useAppStore } from '@/store/app-store';
 
-export function TopBar() {
+import { Editor } from 'tldraw';
+
+interface TopBarProps {
+  editor?: Editor | null;
+}
+
+export function TopBar({ editor }: TopBarProps) {
   const { theme, toggleTheme, connectedUsers } = useAppStore();
   const [copied, setCopied] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
@@ -31,9 +37,29 @@ export function TopBar() {
     }
   };
 
-  const handleOpenExport = () => {
-    const code = `graph TD\n    A[Client App] -->|HTTPS| B(API Gateway)\n    B -->|gRPC| C[(PostgreSQL DB)]\n    B -->|Cache| D[(Redis Cache)]`;
-    setMermaidCode(code);
+  const handleOpenExport = async () => {
+    let shapesData: Array<Record<string, unknown>> = [];
+    if (editor) {
+      const pageShapes = Array.from(editor.getCurrentPageShapes());
+      shapesData = pageShapes.map((s) => ({
+        id: s.id,
+        type: s.type,
+        props: s.props,
+      }));
+    }
+
+    try {
+      const res = await fetch('/api/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shapes: shapesData, format: 'mermaid' }),
+      });
+      const data = await res.json();
+      setMermaidCode(data.mermaidCode || `graph TD\n    A[Client App] --> B(API Gateway)\n    B --> C[(PostgreSQL DB)]`);
+    } catch {
+      setMermaidCode(`graph TD\n    A[Client App] --> B(API Gateway)\n    B --> C[(PostgreSQL DB)]`);
+    }
+
     setShowExportModal(true);
   };
 

@@ -50,7 +50,7 @@ export default function BoardPage() {
         <div className="absolute inset-0 pointer-events-none z-10 flex flex-col">
           {/* Top Bar */}
           <div className="pointer-events-auto">
-            <TopBar />
+            <TopBar editor={editor} />
           </div>
           
           <div className="flex-1 relative flex">
