@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Sparkles, Link as LinkIcon, Sun, Moon, Download, Check, FileCode, Upload, Eye } from 'lucide-react';
+import { Sparkles, Link as LinkIcon, Sun, Moon, Download, Check, FileCode, Upload, Eye, Image as ImageIcon } from 'lucide-react';
 import { useAppStore } from '@/store/app-store';
 import { Editor, createShapeId, TLShapeId } from 'tldraw';
 
@@ -72,6 +72,62 @@ export function TopBar({ editor }: TopBarProps) {
     setTimeout(() => setCopiedMermaid(false), 2000);
   };
 
+  const handleExportSvg = async () => {
+    if (!editor) return;
+    const shapeIds = Array.from(editor.getCurrentPageShapeIds());
+    if (shapeIds.length === 0) return;
+    try {
+      const svgRes = await editor.getSvgElement(shapeIds);
+      if (svgRes?.svg) {
+        const svgString = new XMLSerializer().serializeToString(svgRes.svg);
+        const blob = new Blob([svgString], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'synapseboard-architecture.svg';
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    } catch (err) {
+      console.error('Failed to export SVG:', err);
+    }
+  };
+
+  const handleExportPng = async () => {
+    if (!editor) return;
+    const shapeIds = Array.from(editor.getCurrentPageShapeIds());
+    if (shapeIds.length === 0) return;
+    try {
+      const svgRes = await editor.getSvgElement(shapeIds);
+      if (svgRes?.svg) {
+        const svgString = new XMLSerializer().serializeToString(svgRes.svg);
+        const img = new Image();
+        const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+        const url = URL.createObjectURL(svgBlob);
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width || 1200;
+          canvas.height = img.height || 800;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.fillStyle = '#09090b';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0);
+            const pngUrl = canvas.toDataURL('image/png');
+            const a = document.createElement('a');
+            a.href = pngUrl;
+            a.download = 'synapseboard-architecture.png';
+            a.click();
+          }
+          URL.revokeObjectURL(url);
+        };
+        img.src = url;
+      }
+    } catch (err) {
+      console.error('Failed to export PNG:', err);
+    }
+  };
+
   const handleCompileMermaidToCanvas = () => {
     if (!editor || !importCode.trim()) return;
 
@@ -86,7 +142,6 @@ export function TopBar({ editor }: TopBarProps) {
       const trimmed = line.trim();
       if (!trimmed || trimmed.startsWith('graph')) return;
 
-      // Extract node definitions like A[Label] or B(Label)
       const nodeMatches = trimmed.matchAll(/([A-Za-z0-9_]+)(\[|\(|\(\()([^\]\)]+)(\]|\)|\)\))/g);
       for (const match of nodeMatches) {
         const [, nodeId, bracket, label] = match;
@@ -116,7 +171,6 @@ export function TopBar({ editor }: TopBarProps) {
         }
       }
 
-      // Extract connections like A --> B
       if (trimmed.includes('-->')) {
         const parts = trimmed.split('-->');
         if (parts.length >= 2) {
@@ -240,7 +294,7 @@ export function TopBar({ editor }: TopBarProps) {
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:opacity-90 transition-opacity shadow-sm"
           >
             <Download size={14} />
-            Mermaid Code
+            Export / Import
           </button>
           
           {/* Theme Toggle */}
@@ -264,7 +318,7 @@ export function TopBar({ editor }: TopBarProps) {
             <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border)' }}>
               <div className="flex items-center gap-2">
                 <FileCode size={20} className="text-purple-400" />
-                <h3 className="font-semibold text-lg" style={{ color: 'var(--text-primary)' }}>Mermaid Architecture Compiler</h3>
+                <h3 className="font-semibold text-lg" style={{ color: 'var(--text-primary)' }}>Architecture Import & Export Hub</h3>
               </div>
               <button 
                 onClick={() => setShowExportModal(false)}
@@ -282,7 +336,7 @@ export function TopBar({ editor }: TopBarProps) {
                   activeTab === 'export' ? 'bg-purple-600 text-white shadow' : 'text-gray-400 hover:text-white'
                 }`}
               >
-                <Download size={14} /> Export Mermaid Code
+                <Download size={14} /> Export Mermaid & Images
               </button>
               <button
                 onClick={() => setActiveTab('import')}
@@ -290,33 +344,51 @@ export function TopBar({ editor }: TopBarProps) {
                   activeTab === 'import' ? 'bg-purple-600 text-white shadow' : 'text-gray-400 hover:text-white'
                 }`}
               >
-                <Upload size={14} /> Import & Compile to Canvas
+                <Upload size={14} /> Import & Compile Mermaid
               </button>
             </div>
 
             {activeTab === 'export' ? (
               <div className="flex flex-col gap-3">
                 <p className="text-xs text-gray-400">
-                  Export your active canvas architecture into standard Mermaid.js format for GitHub docs or Markdown files.
+                  Export your active canvas architecture into PNG/SVG image files or standard Mermaid.js markdown syntax.
                 </p>
-                <pre className="p-4 rounded-lg bg-black/40 text-green-400 font-mono text-xs overflow-x-auto border border-white/10 max-h-56">
+                <pre className="p-4 rounded-lg bg-black/40 text-green-400 font-mono text-xs overflow-x-auto border border-white/10 max-h-48">
                   {mermaidCode}
                 </pre>
-                <div className="flex items-center justify-end gap-3 pt-2">
-                  <button 
-                    onClick={() => setShowExportModal(false)}
-                    className="px-4 py-2 text-xs font-medium rounded-lg border hover:bg-white/5"
-                    style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
-                  >
-                    Close
-                  </button>
-                  <button 
-                    onClick={handleCopyMermaid}
-                    className="px-4 py-2 text-xs font-medium rounded-lg bg-gradient-to-r from-purple-500 to-blue-500 text-white flex items-center gap-1.5 hover:opacity-90"
-                  >
-                    {copiedMermaid ? <Check size={14} /> : <FileCode size={14} />}
-                    {copiedMermaid ? 'Copied Code!' : 'Copy Mermaid Code'}
-                  </button>
+                
+                <div className="flex items-center justify-between pt-2">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleExportPng}
+                      className="px-3 py-1.5 text-xs font-medium rounded-lg bg-white/10 border border-white/10 hover:bg-white/20 text-white flex items-center gap-1.5"
+                    >
+                      <ImageIcon size={14} /> Export PNG
+                    </button>
+                    <button
+                      onClick={handleExportSvg}
+                      className="px-3 py-1.5 text-xs font-medium rounded-lg bg-white/10 border border-white/10 hover:bg-white/20 text-white flex items-center gap-1.5"
+                    >
+                      <Download size={14} /> Export SVG
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => setShowExportModal(false)}
+                      className="px-3 py-1.5 text-xs font-medium rounded-lg border hover:bg-white/5"
+                      style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
+                    >
+                      Close
+                    </button>
+                    <button 
+                      onClick={handleCopyMermaid}
+                      className="px-4 py-1.5 text-xs font-medium rounded-lg bg-gradient-to-r from-purple-500 to-blue-500 text-white flex items-center gap-1.5 hover:opacity-90"
+                    >
+                      {copiedMermaid ? <Check size={14} /> : <FileCode size={14} />}
+                      {copiedMermaid ? 'Copied Code!' : 'Copy Mermaid Code'}
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : (
