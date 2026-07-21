@@ -2,10 +2,9 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Sparkles, Link as LinkIcon, Sun, Moon, Download, Check, FileCode } from 'lucide-react';
+import { Sparkles, Link as LinkIcon, Sun, Moon, Download, Check, FileCode, Upload, Eye } from 'lucide-react';
 import { useAppStore } from '@/store/app-store';
-
-import { Editor } from 'tldraw';
+import { Editor, createShapeId, TLShapeId } from 'tldraw';
 
 interface TopBarProps {
   editor?: Editor | null;
@@ -15,8 +14,11 @@ export function TopBar({ editor }: TopBarProps) {
   const { theme, toggleTheme, connectedUsers } = useAppStore();
   const [copied, setCopied] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<'export' | 'import'>('export');
   const [mermaidCode, setMermaidCode] = useState('');
+  const [importCode, setImportCode] = useState('graph TD\n    A[Web App] --> B(API Gateway)\n    B --> C[(Postgres DB)]');
   const [copiedMermaid, setCopiedMermaid] = useState(false);
+  const [followingUser, setFollowingUser] = useState<string | null>(null);
 
   // Dummy users for demo
   const mockUsers = connectedUsers?.length > 0 ? connectedUsers : [
@@ -60,6 +62,7 @@ export function TopBar({ editor }: TopBarProps) {
       setMermaidCode(`graph TD\n    A[Client App] --> B(API Gateway)\n    B --> C[(PostgreSQL DB)]`);
     }
 
+    setActiveTab('export');
     setShowExportModal(true);
   };
 
@@ -67,6 +70,87 @@ export function TopBar({ editor }: TopBarProps) {
     navigator.clipboard.writeText(mermaidCode);
     setCopiedMermaid(true);
     setTimeout(() => setCopiedMermaid(false), 2000);
+  };
+
+  const handleCompileMermaidToCanvas = () => {
+    if (!editor || !importCode.trim()) return;
+
+    const center = editor.getViewportPageBounds().center;
+    const lines = importCode.split('\n');
+
+    const nodeMap: Record<string, TLShapeId> = {};
+    const newShapes: Array<Record<string, unknown>> = [];
+    let nodeIndex = 0;
+
+    lines.forEach((line) => {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('graph')) return;
+
+      // Extract node definitions like A[Label] or B(Label)
+      const nodeMatches = trimmed.matchAll(/([A-Za-z0-9_]+)(\[|\(|\(\()([^\]\)]+)(\]|\)|\)\))/g);
+      for (const match of nodeMatches) {
+        const [, nodeId, bracket, label] = match;
+        if (!nodeMap[nodeId]) {
+          const shapeId = createShapeId();
+          nodeMap[nodeId] = shapeId;
+
+          const shapeType = bracket === '(' || bracket === '((' ? 'ellipse' : 'rectangle';
+          const posX = center.x - 200 + (nodeIndex * 220);
+          const posY = center.y - 40;
+
+          newShapes.push({
+            id: shapeId,
+            type: 'geo',
+            x: posX,
+            y: posY,
+            props: {
+              geo: shapeType,
+              w: 160,
+              h: 80,
+              color: nodeIndex % 2 === 0 ? 'violet' : 'blue',
+              fill: 'semi',
+              text: label,
+            },
+          });
+          nodeIndex++;
+        }
+      }
+
+      // Extract connections like A --> B
+      if (trimmed.includes('-->')) {
+        const parts = trimmed.split('-->');
+        if (parts.length >= 2) {
+          const startX = center.x - 40;
+          const startY = center.y;
+          newShapes.push({
+            id: createShapeId(),
+            type: 'arrow',
+            x: startX,
+            y: startY,
+            props: {
+              start: { x: 0, y: 0 },
+              end: { x: 140, y: 0 },
+            },
+          });
+        }
+      }
+    });
+
+    if (newShapes.length > 0) {
+      editor.createShapes(newShapes as unknown as Parameters<typeof editor.createShapes>[0]);
+    }
+    setShowExportModal(false);
+  };
+
+  const handleToggleFollowUser = (userId: string) => {
+    if (followingUser === userId) {
+      setFollowingUser(null);
+    } else {
+      setFollowingUser(userId);
+      if (editor) {
+        editor.zoomToFit();
+      }
+    }
   };
 
   return (
@@ -97,6 +181,12 @@ export function TopBar({ editor }: TopBarProps) {
             className="bg-transparent border-none outline-none font-medium hover:bg-black/5 dark:hover:bg-white/5 px-2 py-1 rounded transition-colors"
             style={{ color: 'var(--text-primary)' }}
           />
+
+          {followingUser && (
+            <div className="px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-500/20 border border-purple-500/40 text-purple-300 flex items-center gap-1.5 animate-pulse">
+              <Eye size={12} /> Following Teammate
+            </div>
+          )}
         </div>
 
         {/* CENTER: Empty */}
@@ -107,14 +197,17 @@ export function TopBar({ editor }: TopBarProps) {
           {/* Connected Users */}
           <div className="flex items-center -space-x-2">
             {displayUsers.map((user) => (
-              <div 
+              <button 
                 key={user.id}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold border-2 border-white dark:border-gray-900 shadow-sm"
+                onClick={() => handleToggleFollowUser(user.id)}
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold border-2 transition-transform hover:scale-110 shadow-sm ${
+                  followingUser === user.id ? 'border-yellow-400 ring-2 ring-yellow-400/50' : 'border-white dark:border-gray-900'
+                }`}
                 style={{ backgroundColor: user.color || 'var(--accent)' }}
-                title={user.name}
+                title={`Click to follow ${user.name}`}
               >
                 {user.name.charAt(0).toUpperCase()}
-              </div>
+              </button>
             ))}
             {overflowCount > 0 && (
               <div 
@@ -141,13 +234,13 @@ export function TopBar({ editor }: TopBarProps) {
             {copied ? 'Copied!' : 'Share'}
           </button>
           
-          {/* Export Code Button */}
+          {/* Export / Import Button */}
           <button 
             onClick={handleOpenExport}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:opacity-90 transition-opacity shadow-sm"
           >
             <Download size={14} />
-            Export Code
+            Mermaid Code
           </button>
           
           {/* Theme Toggle */}
@@ -161,17 +254,17 @@ export function TopBar({ editor }: TopBarProps) {
         </div>
       </div>
 
-      {/* Export Modal */}
+      {/* Export & Import Modal */}
       {showExportModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in px-4">
           <div 
-            className="w-full max-w-lg p-6 glass rounded-2xl border shadow-2xl flex flex-col gap-4 animate-fade-in-scale"
+            className="w-full max-w-xl p-6 glass rounded-2xl border shadow-2xl flex flex-col gap-4 animate-fade-in-scale"
             style={{ borderColor: 'var(--border)' }}
           >
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border)' }}>
               <div className="flex items-center gap-2">
                 <FileCode size={20} className="text-purple-400" />
-                <h3 className="font-semibold text-lg" style={{ color: 'var(--text-primary)' }}>Export Diagram to Code</h3>
+                <h3 className="font-semibold text-lg" style={{ color: 'var(--text-primary)' }}>Mermaid Architecture Compiler</h3>
               </div>
               <button 
                 onClick={() => setShowExportModal(false)}
@@ -181,30 +274,79 @@ export function TopBar({ editor }: TopBarProps) {
               </button>
             </div>
 
-            <p className="text-xs text-gray-400">
-              Export your canvas architecture directly into Mermaid.js format for Markdown, GitHub PRs, or documentation.
-            </p>
-
-            <pre className="p-4 rounded-lg bg-black/40 text-green-400 font-mono text-xs overflow-x-auto border border-white/10">
-              {mermaidCode}
-            </pre>
-
-            <div className="flex items-center justify-end gap-3 pt-2">
-              <button 
-                onClick={() => setShowExportModal(false)}
-                className="px-4 py-2 text-xs font-medium rounded-lg border hover:bg-white/5"
-                style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
+            {/* Tab Switching */}
+            <div className="flex items-center gap-2 p-1 rounded-lg bg-black/20 border border-white/5">
+              <button
+                onClick={() => setActiveTab('export')}
+                className={`flex-1 py-1.5 rounded-md text-xs font-medium flex items-center justify-center gap-1.5 transition-all ${
+                  activeTab === 'export' ? 'bg-purple-600 text-white shadow' : 'text-gray-400 hover:text-white'
+                }`}
               >
-                Close
+                <Download size={14} /> Export Mermaid Code
               </button>
-              <button 
-                onClick={handleCopyMermaid}
-                className="px-4 py-2 text-xs font-medium rounded-lg bg-gradient-to-r from-purple-500 to-blue-500 text-white flex items-center gap-1.5 hover:opacity-90"
+              <button
+                onClick={() => setActiveTab('import')}
+                className={`flex-1 py-1.5 rounded-md text-xs font-medium flex items-center justify-center gap-1.5 transition-all ${
+                  activeTab === 'import' ? 'bg-purple-600 text-white shadow' : 'text-gray-400 hover:text-white'
+                }`}
               >
-                {copiedMermaid ? <Check size={14} /> : <FileCode size={14} />}
-                {copiedMermaid ? 'Copied Code!' : 'Copy Mermaid Code'}
+                <Upload size={14} /> Import & Compile to Canvas
               </button>
             </div>
+
+            {activeTab === 'export' ? (
+              <div className="flex flex-col gap-3">
+                <p className="text-xs text-gray-400">
+                  Export your active canvas architecture into standard Mermaid.js format for GitHub docs or Markdown files.
+                </p>
+                <pre className="p-4 rounded-lg bg-black/40 text-green-400 font-mono text-xs overflow-x-auto border border-white/10 max-h-56">
+                  {mermaidCode}
+                </pre>
+                <div className="flex items-center justify-end gap-3 pt-2">
+                  <button 
+                    onClick={() => setShowExportModal(false)}
+                    className="px-4 py-2 text-xs font-medium rounded-lg border hover:bg-white/5"
+                    style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
+                  >
+                    Close
+                  </button>
+                  <button 
+                    onClick={handleCopyMermaid}
+                    className="px-4 py-2 text-xs font-medium rounded-lg bg-gradient-to-r from-purple-500 to-blue-500 text-white flex items-center gap-1.5 hover:opacity-90"
+                  >
+                    {copiedMermaid ? <Check size={14} /> : <FileCode size={14} />}
+                    {copiedMermaid ? 'Copied Code!' : 'Copy Mermaid Code'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                <p className="text-xs text-gray-400">
+                  Paste any Mermaid markdown syntax below to compile it into interactive, movable tldraw shapes.
+                </p>
+                <textarea
+                  value={importCode}
+                  onChange={(e) => setImportCode(e.target.value)}
+                  rows={6}
+                  className="w-full p-4 rounded-lg bg-black/40 text-purple-300 font-mono text-xs outline-none border border-white/10 focus:border-purple-500 transition-colors"
+                />
+                <div className="flex items-center justify-end gap-3 pt-2">
+                  <button 
+                    onClick={() => setShowExportModal(false)}
+                    className="px-4 py-2 text-xs font-medium rounded-lg border hover:bg-white/5"
+                    style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={handleCompileMermaidToCanvas}
+                    className="px-4 py-2 text-xs font-medium rounded-lg bg-gradient-to-r from-purple-500 to-blue-500 text-white flex items-center gap-1.5 hover:opacity-90"
+                  >
+                    <Sparkles size={14} /> Compile to Canvas
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

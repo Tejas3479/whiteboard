@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { X, Sparkles, SendHorizontal, Check, X as XIcon } from 'lucide-react';
+import React, { useEffect, useCallback } from 'react';
+import { X, Sparkles, SendHorizontal, Check, X as XIcon, Eye } from 'lucide-react';
 import { useAppStore, AISuggestion } from '@/store/app-store';
 import { Editor, createShapeId, TLShapeId } from 'tldraw';
 
@@ -46,7 +46,7 @@ export function AiPanel({ editor }: AiPanelProps) {
     "Auth Flow", "API Architecture", "Database Schema", "Microservices"
   ];
 
-  const handleAcceptSuggestion = (sugg: AISuggestion) => {
+  const handleAcceptSuggestion = useCallback((sugg: AISuggestion) => {
     if (editor) {
       const center = editor.getViewportPageBounds().center;
       let parsedData: ParsedSuggestionData = {};
@@ -89,6 +89,7 @@ export function AiPanel({ editor }: AiPanelProps) {
             h: 80,
             color: idx === 0 ? 'violet' : idx === 1 ? 'blue' : 'green',
             fill: 'semi',
+            text: n.label || 'Node',
           },
         });
       });
@@ -114,14 +115,51 @@ export function AiPanel({ editor }: AiPanelProps) {
         });
       });
 
-      editor.createShapes(newShapes as Parameters<typeof editor.createShapes>[0]);
+      editor.createShapes(newShapes as unknown as Parameters<typeof editor.createShapes>[0]);
     }
     removeAiSuggestion(sugg.id);
+  }, [editor, removeAiSuggestion]);
+
+  const handlePreviewGhostShapes = (sugg: AISuggestion) => {
+    if (!editor) return;
+    const center = editor.getViewportPageBounds().center;
+    const shapeId = createShapeId();
+
+    editor.createShapes([
+      {
+        id: shapeId,
+        type: 'geo',
+        x: center.x - 80,
+        y: center.y - 40,
+        props: {
+          geo: 'rectangle',
+          w: 180,
+          h: 90,
+          color: 'grey',
+          fill: 'pattern',
+          dash: 'dashed',
+          text: `Ghost: ${sugg.title || 'Preview'}`,
+        },
+      },
+    ] as unknown as Parameters<typeof editor.createShapes>[0]);
   };
 
   const handleRejectSuggestion = (suggId: string) => {
     removeAiSuggestion(suggId);
   };
+
+  // Keyboard shortcut: Press Tab to accept top suggestion
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Tab' && aiSuggestions && aiSuggestions.length > 0) {
+        e.preventDefault();
+        handleAcceptSuggestion(aiSuggestions[0]);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [aiSuggestions, editor, handleAcceptSuggestion]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -176,7 +214,7 @@ export function AiPanel({ editor }: AiPanelProps) {
       addAiSuggestion({
         id: Date.now().toString(),
         title: `Diagram: ${currentPrompt}`,
-        description: `Generated ${nodes.length} nodes and ${edges.length} connections for "${currentPrompt}".`,
+        description: `Generated ${nodes.length} nodes and ${edges.length} connections. Press Tab or click Accept to add to canvas.`,
         code: JSON.stringify({ nodes, edges }),
       });
     } catch (err) {
@@ -185,7 +223,7 @@ export function AiPanel({ editor }: AiPanelProps) {
       addAiSuggestion({
         id: Date.now().toString(),
         title: `Diagram: ${currentPrompt}`,
-        description: `Generated architecture diagram for "${currentPrompt}".`,
+        description: `Generated architecture diagram for "${currentPrompt}". Press Tab to accept.`,
       });
     } finally {
       setIsAiThinking(false);
@@ -246,8 +284,12 @@ export function AiPanel({ editor }: AiPanelProps) {
               backgroundColor: 'var(--surface-elevated)' 
             }}
           >
-            <h3 className="font-medium text-sm" style={{ color: 'var(--text-primary)' }}>{sugg.title}</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="font-medium text-sm" style={{ color: 'var(--text-primary)' }}>{sugg.title}</h3>
+              <span className="text-[10px] px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 font-mono">Press Tab</span>
+            </div>
             <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{sugg.description}</p>
+            
             <div className="flex items-center gap-2 mt-2">
               <button 
                 onClick={() => handleAcceptSuggestion(sugg)}
@@ -256,11 +298,19 @@ export function AiPanel({ editor }: AiPanelProps) {
                 <Check size={14} /> Accept
               </button>
               <button 
+                onClick={() => handlePreviewGhostShapes(sugg)}
+                className="py-1.5 px-2 flex items-center justify-center gap-1 rounded border hover:bg-black/5 dark:hover:bg-white/5 text-xs font-medium transition-colors"
+                style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
+                title="Preview Ghost Shapes"
+              >
+                <Eye size={14} /> Ghost
+              </button>
+              <button 
                 onClick={() => handleRejectSuggestion(sugg.id)}
-                className="flex-1 py-1.5 flex items-center justify-center gap-1 rounded border hover:bg-black/5 dark:hover:bg-white/5 text-xs font-medium transition-colors" 
+                className="py-1.5 px-2 flex items-center justify-center gap-1 rounded border hover:bg-black/5 dark:hover:bg-white/5 text-xs font-medium transition-colors" 
                 style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
               >
-                <XIcon size={14} /> Reject
+                <XIcon size={14} />
               </button>
             </div>
           </div>
@@ -273,7 +323,7 @@ export function AiPanel({ editor }: AiPanelProps) {
             <div className="h-3 w-full rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
             <div className="h-3 w-3/4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
             <div className="flex items-center gap-2 mt-2 text-xs font-medium text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-blue-500 animate-pulse">
-              <Sparkles size={12} className="text-purple-500" /> Thinking...
+              <Sparkles size={12} className="text-purple-500" /> Generating Ghost Shapes...
             </div>
           </div>
         )}
