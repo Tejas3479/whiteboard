@@ -1,31 +1,53 @@
 # SynapseBoard ⚡
 
 > **Think Together. Draw Smarter.**
-> Production-grade, real-time collaborative architecture whiteboard powered by AI diagram intelligence, Liveblocks multiplayer presence, tldraw canvas engine, and Supabase persistent storage.
+> Production-grade, real-time collaborative architecture whiteboard powered by AI diagram intelligence, Mess Cleanup auto-align layout engine, Deep Architecture Assist, Executable Context Layer, Liveblocks multiplayer presence, tldraw canvas engine, and Supabase persistent storage.
 
 ---
 
 ## 🌟 Key Features
 
-### 🤖 1. AI Copilot & On-Canvas "Ghost Shapes"
+### 🧹 1. Mess Cleanup (Auto-Align & Animated Layout Engine)
+- **Automatic Graph & Topology Analysis:** Scans all canvas shapes (`geo`, `text`, `note`) and extracts explicit and implicit arrow connector topologies using spatial proximity heuristics.
+- **Hierarchical DAG Layering:** Computes an optimized directed acyclic graph layout (longest-path layering) with balanced horizontal and vertical spacing centered around the user's active viewport.
+- **Smooth 350ms Animated Physics:** Features a custom `requestAnimationFrame` physics loop with cubic-bezier easing (`easeOutCubic`) so shapes and connecting arrows fly smoothly into position.
+
+### 🏗️ 2. Architecture Assist (Deep Canvas Diagram Analysis)
+- **Canvas Serialization:** Serializes real-time canvas shapes and connector pairs, transmitting active diagram topology to a specialized Systems Architect AI engine (`POST /api/ai/architecture-assist`).
+- **Structured Architectural Recommendations:** Evaluates diagrams across 4 critical enterprise categories:
+  - **Missing Components:** e.g. *Redis Caching Layer*
+  - **API Gateway Suggestions:** e.g. *NGINX / AWS ALB Ingress & Rate Limiting*
+  - **DBMS Guidance:** e.g. *PostgreSQL Primary & Read-Replica Partitioning*
+  - **Scalability & Observability:** e.g. *Kafka/RabbitMQ Queues & OpenTelemetry/Prometheus*
+- **1-Click Canvas Insertion:** Actionable cards feature a **"+ Add [Node Label] to Canvas"** button that automatically creates and offsets missing services directly on your whiteboard.
+
+### 📎 3. Executable Context Layer & Visual On-Canvas Badges
+- **Per-Element Context Attachment:** Attach comprehensive metadata to any element on the canvas:
+  - **Rich Text Notes:** Architectural specifications, API contracts, and schema definitions with live auto-save indicators.
+  - **Reference Links:** URL manager for Swagger docs, Figma mockups, and GitHub repositories.
+  - **Code Snippets:** Syntax-highlighted code blocks supporting `TypeScript`, `SQL Schema`, `JSON Payload`, `Python`, and `Bash`.
+  - **File Attachments:** Drag-and-drop file uploader supporting images, PDFs, and spec documents.
+- **On-Canvas Visual Badges:** Projects glowing interactive badges (`FileText`, `Link`, `Code2`, `Paperclip`) with item counters directly over shape viewport coordinates. Clicking any shape badge launches its Context Panel.
+
+### 🤖 4. AI Copilot & On-Canvas "Ghost Shapes"
 - **AI Diagram Streaming:** Describe any cloud or software system (e.g. *"AWS Serverless Architecture with CloudFront, Lambda, and DynamoDB"*) to stream structured architecture nodes and edges in real-time.
 - **On-Canvas Ghost Shapes:** Renders semi-transparent (`opacity: 0.45`, dashed grey) ghost shapes directly at target coordinates on the canvas before committing.
 - **1-Key Tab Commit:** Press **Tab** or click **Accept** to instantly convert ghost shapes into solid, synced tldraw canvas shapes.
 
-### 🧬 2. Mermaid-to-Canvas Compiler (Two-Way Sync)
+### 🧬 5. Mermaid-to-Canvas Compiler (Two-Way Sync)
 - **Import Mermaid Markdown:** Paste any standard Mermaid syntax (e.g. from ChatGPT or GitHub docs) to compile it into interactive, movable tldraw shapes.
 - **Shape Support:** Recognizes rectangular services `[Node]`, rounded endpoints `(API)`, databases `[(DB)]`, and decision nodes `{Router}` with labeled connecting arrows `-->|HTTPS|`.
 - **Export Formats:** 1-click export of active canvas diagrams to Mermaid.js code syntax, high-res **PNG** images, or vector **SVG** files.
 
-### 👥 3. Multiplayer & Teammate "Follow Mode"
+### 👥 6. Multiplayer & Teammate "Follow Mode"
 - **Live Cursors & Presence:** Synchronized multi-user cursors with customized user names, avatars, and distinct colors powered by `@liveblocks/react`.
 - **Continuous Follow Mode:** Click any teammate's avatar in the top bar to lock your camera to theirs, smoothly tracking their screen as they present or navigate around the canvas.
 
-### ⏳ 4. Time-Travel Diagram Replay
+### ⏳ 7. Time-Travel Diagram Replay
 - **Historical Timeline:** Automatically records step-by-step canvas snapshots as your architecture evolves.
 - **Interactive Replay Bar:** Scrub backward and forward using a bottom playback slider, complete with **Play/Pause**, **Step Back**, **Step Forward**, and automatic live state restoration.
 
-### 💾 5. Supabase Postgres Room & Snapshot Persistence
+### 💾 8. Supabase Postgres Room & Snapshot Persistence
 - **Persistent Rooms:** Database storage backed by Supabase Postgres with Row Level Security (RLS) policies for room titles, access states, and canvas state snapshots across server restarts.
 - **Seamless Local Fallback:** Gracefully falls back to an in-memory persistent store when Supabase environment variables are not supplied.
 
@@ -37,10 +59,12 @@
 | :--- | :--- | :--- |
 | **Framework** | [Next.js 16 (App Router)](https://nextjs.org/) | Core application framework & API routes |
 | **Canvas Engine** | [tldraw v5](https://tldraw.dev/) | Infinite vector canvas drawing engine |
+| **Auto-Layout Engine** | Custom DAG & Topology Compiler | Hierarchical graph layering & 350ms easing transitions |
+| **Context Store** | Zustand & Local Storage | Shape-level Notes, Links, Code, Files & Canvas Overlay Badges |
 | **Multiplayer Sync** | [Liveblocks](https://liveblocks.io/) | Real-time presence, Yjs synchronization, and user state |
-| **State Management** | [Zustand](https://github.com/pmndrs/zustand) | Global UI state, AI suggestions, and follow mode |
+| **State Management** | [Zustand](https://github.com/pmndrs/zustand) | Global UI state, AI suggestions, context layer, and follow mode |
 | **Persistence** | [Supabase Postgres](https://supabase.com/) | Room metadata & canvas snapshot storage |
-| **AI Stream Engine** | [Vercel AI SDK](https://sdk.vercel.ai/) & OpenAI | Streaming NDJSON diagram generation |
+| **AI Stream Engine** | [Vercel AI SDK](https://sdk.vercel.ai/) & OpenAI | Streaming NDJSON diagram generation & Architecture Assist |
 | **Styling** | Vanilla CSS Tokens & TailwindCSS v4 | Modern glassmorphism UI & responsive layouts |
 
 ---
@@ -61,7 +85,7 @@ npm install
 ### 3. Environment Variables (Optional)
 Create a `.env.local` file in the root directory:
 ```env
-# OpenAI API Key for live AI diagram generation
+# OpenAI API Key for live AI diagram generation & Architecture Assist
 OPENAI_API_KEY=your_openai_api_key_here
 
 # Liveblocks API Key for real-time collaboration
@@ -110,17 +134,17 @@ CREATE POLICY "Anyone can update room snapshots" ON rooms FOR UPDATE USING (true
 
 ---
 
-## ⌨️ Keyboard Shortcuts & Quick Chips
+## ⌨️ Keyboard Shortcuts & Quick Controls
 
-| Shortcut / Control | Action |
+| Control / Shortcut | Feature / Action |
 | :--- | :--- |
+| **Wand Icon (`Mess Cleanup`)** | Trigger 350ms smooth animated auto-alignment of diagram topology |
+| **`Architecture Assist` Tab** | Run AI deep canvas analysis & inspect missing service recommendations |
+| **`Context Layer` Icon / Badge** | Open element context panel to edit Notes, Links, Code, & Files |
+| **Click Canvas Shape Badge** | Directly open attached Context Layer for selected element |
 | **Tab** | Instantly commit top AI suggestion / ghost shape on canvas |
 | **Click Teammate Avatar** | Toggle continuous camera **Follow Mode** |
 | **Time-Travel Button** | Toggle step-by-step diagram history replay slider |
-| **`Auth Flow` chip** | Quick prompt: Generate OAuth / Client-Auth diagram |
-| **`AWS Serverless` chip** | Quick prompt: Generate CloudFront -> Gateway -> Lambda -> DynamoDB |
-| **`Kubernetes Cluster` chip** | Quick prompt: Generate Ingress -> Pods -> StatefulSet |
-| **`Kafka Event Pipeline` chip** | Quick prompt: Generate Producer -> Broker -> Consumers |
 
 ---
 

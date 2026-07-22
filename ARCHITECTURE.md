@@ -1,6 +1,6 @@
 # SynapseBoard System Architecture & Design Document 📐
 
-This document provides a comprehensive technical breakdown of **SynapseBoard**'s system design, state management, real-time collaboration pipeline, AI streaming engine, and storage architecture.
+This document provides a comprehensive technical breakdown of **SynapseBoard**'s system design, state management, real-time collaboration pipeline, Mess Cleanup engine, Deep Architecture Assist, Context Layer, AI streaming engine, and storage architecture.
 
 ---
 
@@ -12,24 +12,32 @@ graph TD
     
     subgraph UI Overlay & Canvas
         UI --> TopBar[Top Bar & Multi-Modal Controls]
-        UI --> Toolbar[Left Vector Toolbar]
-        UI --> AIPanel[AI Copilot Panel]
+        UI --> Toolbar[Left Vector Toolbar & Mess Cleanup]
+        UI --> AIPanel[AI Copilot & Architecture Assist]
+        UI --> ContextPanel[Context Layer Panel]
+        UI --> ContextBadges[Canvas Shape Badges Overlay]
         UI --> Canvas[tldraw v5 Vector Engine]
         UI --> ReplayBar[Time-Travel Replay Bar]
     end
 
-    subgraph State Management
-        UI --> Store[Zustand Global Store]
+    subgraph Core Logic & State Management
+        UI --> Store[Zustand Global App Store]
+        UI --> ContextStore[Zustand Context Store]
+        Toolbar -->|Auto-Align & Animation| AutoLayout[Auto-Layout & DAG Engine]
+        AutoLayout -->|Batch Update| Canvas
+        ContextBadges -->|Screen Projection| Canvas
         Store -->|State Sync| Canvas
         Store -->|Presence Tracking| Cursors[Presence & Cursors Overlay]
     end
 
     subgraph Backend Services & APIs
         AIPanel -->|NDJSON Stream| AIService[/api/ai/suggest]
+        AIPanel -->|Canvas Shapes Payload| ArchAssist[/api/ai/architecture-assist]
         TopBar -->|Mermaid / SVG / PNG| ExportService[/api/export]
         TopBar -->|Room CRUD| RoomsService[/api/rooms]
         
         AIService -->|Vercel AI SDK| OpenAI[OpenAI GPT-4o-mini]
+        ArchAssist -->|Deep Analysis Stream| OpenAI
         RoomsService -->|REST / RLS| Supabase[(Supabase Postgres)]
     end
 
@@ -44,12 +52,38 @@ graph TD
 
 ### 1. Canvas Engine (`tldraw v5` Integration)
 - **Path:** [`src/components/canvas-wrapper.tsx`](file:///c:/Users/tejas/Downloads/whiteboard/src/components/canvas-wrapper.tsx) & [`src/app/board/[id]/page.tsx`](file:///c:/Users/tejas/Downloads/whiteboard/src/app/board/[id]/page.tsx)
-- **Design:** `tldraw` provides an infinite vector canvas. We isolate the canvas instance and expose the `Editor` object via the `onMount` callback to parent UI overlays (`TopBar`, `Toolbar`, `AiPanel`, `TimeTravelReplay`).
+- **Design:** `tldraw` provides an infinite vector canvas. We isolate the canvas instance and expose the `Editor` object via the `onMount` callback to parent UI overlays (`TopBar`, `Toolbar`, `AiPanel`, `ContextPanel`, `ContextBadges`, `TimeTravelReplay`).
 - **Reactive Updates:** The UI overlays programmatically construct tldraw shape definitions (`editor.createShapes()`), query active shapes (`editor.getCurrentPageShapes()`), center viewport (`editor.centerOnPoint()`), and manipulate zoom (`editor.zoomIn()`, `editor.zoomOut()`).
 
 ---
 
-### 2. AI Copilot & Ghost Shape Pipeline
+### 2. Mess Cleanup & Auto-Layout Engine
+- **Path:** [`src/lib/auto-layout.ts`](file:///c:/Users/tejas/Downloads/whiteboard/src/lib/auto-layout.ts) & [`src/components/toolbar.tsx`](file:///c:/Users/tejas/Downloads/whiteboard/src/components/toolbar.tsx)
+- **Graph Topology Extraction:** `extractGraphFromEditor()` scans all `geo`, `text`, `note`, and `arrow` shapes, using both explicit bindings (`boundShapeId`) and spatial proximity heuristics (`< 250px` start/end radius) to deduce diagram topology.
+- **Hierarchical DAG Layering:** `computeAutoLayout()` groups nodes into longest-path dependency layers, calculating centered screen positions with horizontal (`260px`) and vertical (`140px`) spacing while updating connecting arrow coordinates.
+- **Smooth 350ms Easing Animation:** `executeMessCleanup()` uses a `requestAnimationFrame` physics loop with cubic-bezier easing (`easeOutCubic`) to smoothly interpolate shape positions and arrow control points frame-by-frame.
+
+---
+
+### 3. Architecture Assist Deep Analysis Pipeline
+- **Path:** [`src/app/api/ai/architecture-assist/route.ts`](file:///c:/Users/tejas/Downloads/whiteboard/src/app/api/ai/architecture-assist/route.ts) & [`src/components/ai-panel.tsx`](file:///c:/Users/tejas/Downloads/whiteboard/src/components/ai-panel.tsx)
+- **Canvas Serialization & Deep Analysis:**
+  1. `handleRunArchitectureAssist()` serializes current canvas shape labels and arrow connections, posting to `/api/ai/architecture-assist`.
+  2. The backend constructs a structured architecture context prompt for a specialized Systems Architect AI (`gpt-4o-mini`).
+  3. Returns an NDJSON stream of categorized recommendations (`missing_component`, `api_suggestion`, `dbms_guidance`, `scalability_tip`).
+  4. The UI displays actionable cards with priority tags and a **"+ Add [Node Label] to Canvas"** button that programmatically creates missing architecture components directly on the whiteboard.
+
+---
+
+### 4. Executable Context Layer & Canvas Badges Overlay
+- **Path:** [`src/store/context-store.ts`](file:///c:/Users/tejas/Downloads/whiteboard/src/store/context-store.ts), [`src/components/context-panel.tsx`](file:///c:/Users/tejas/Downloads/whiteboard/src/components/context-panel.tsx), & [`src/components/context-badges.tsx`](file:///c:/Users/tejas/Downloads/whiteboard/src/components/context-badges.tsx)
+- **Per-Element Metadata Store:** Manages `ShapeContext` records containing Notes, reference Links, multi-language Code Snippets, and File attachments, persisting changes per room in `localStorage`.
+- **Reactive Shape Selection Listener:** `BoardPage` monitors shape selection via `editor.store.listen()`, opening the slide-out Context Panel whenever an element is clicked.
+- **Screen-Projected Canvas Badges:** `ContextBadges` listens to camera zoom and pan events, projecting canvas shape coordinates to viewport space via `editor.pageToViewport()`. Renders interactive badge buttons with attachment counts directly on top of annotated shapes.
+
+---
+
+### 5. AI Copilot & Ghost Shape Pipeline
 - **Path:** [`src/app/api/ai/suggest/route.ts`](file:///c:/Users/tejas/Downloads/whiteboard/src/app/api/ai/suggest/route.ts) & [`src/components/ai-panel.tsx`](file:///c:/Users/tejas/Downloads/whiteboard/src/components/ai-panel.tsx)
 - **Streaming Pipeline:**
   1. The user submits a prompt (e.g. *"Kubernetes Cluster Architecture"*).
@@ -60,7 +94,7 @@ graph TD
 
 ---
 
-### 3. Mermaid-to-Canvas Compiler Engine
+### 6. Mermaid-to-Canvas Compiler Engine
 - **Path:** [`src/lib/mermaid-compiler.ts`](file:///c:/Users/tejas/Downloads/whiteboard/src/lib/mermaid-compiler.ts)
 - **Parsing Strategy:**
   - Tokenizes raw Mermaid syntax using regex AST matchers:
@@ -74,7 +108,7 @@ graph TD
 
 ---
 
-### 4. Teammate Live "Follow Mode"
+### 7. Teammate Live "Follow Mode"
 - **Path:** [`src/components/presence-cursors.tsx`](file:///c:/Users/tejas/Downloads/whiteboard/src/components/presence-cursors.tsx) & [`src/components/top-bar.tsx`](file:///c:/Users/tejas/Downloads/whiteboard/src/components/top-bar.tsx)
 - **Mechanism:**
   - Multi-user cursor coordinates are broadcast across connected peers via Liveblocks `useUpdateMyPresence` pointer listeners.
@@ -83,7 +117,7 @@ graph TD
 
 ---
 
-### 5. Time-Travel Diagram Replay
+### 8. Time-Travel Diagram Replay
 - **Path:** [`src/components/time-travel-replay.tsx`](file:///c:/Users/tejas/Downloads/whiteboard/src/components/time-travel-replay.tsx)
 - **Mechanism:**
   - Listens to tldraw document changes (`editor.store.listen()`).
@@ -93,7 +127,7 @@ graph TD
 
 ---
 
-### 6. Supabase Persistence & Fallback Layer
+### 9. Supabase Persistence & Fallback Layer
 - **Path:** [`src/lib/supabase.ts`](file:///c:/Users/tejas/Downloads/whiteboard/src/lib/supabase.ts) & [`supabase/schema.sql`](file:///c:/Users/tejas/Downloads/whiteboard/supabase/schema.sql)
 - **Design:**
   - `PersistenceService` provides async methods (`createRoom`, `getRoom`, `updateRoomSnapshot`).

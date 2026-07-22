@@ -4,7 +4,52 @@ Complete documentation for SynapseBoard's Next.js App Router API endpoints.
 
 ---
 
-## 🤖 1. AI Suggestion Stream (`/api/ai/suggest`)
+## 🏗️ 1. Architecture Assist Analysis (`/api/ai/architecture-assist`)
+
+Performs deep architectural analysis on serialized canvas shapes and connector topology, streaming structured recommendations in NDJSON format.
+
+- **URL:** `/api/ai/architecture-assist`
+- **Method:** `POST`
+- **Headers:** `Content-Type: application/json`
+
+### Request Body
+```json
+{
+  "shapes": [
+    {
+      "id": "shape:node-1",
+      "type": "geo",
+      "props": { "text": "Client App", "geo": "rectangle" }
+    },
+    {
+      "id": "shape:node-2",
+      "type": "geo",
+      "props": { "text": "Backend API", "geo": "rectangle" }
+    },
+    {
+      "id": "shape:arrow-1",
+      "type": "arrow",
+      "props": {
+        "start": { "boundShapeId": "shape:node-1" },
+        "end": { "boundShapeId": "shape:node-2" }
+      }
+    }
+  ],
+  "apiKey": "optional_openai_api_key"
+}
+```
+
+### Response (`application/x-ndjson`)
+```ndjson
+{"id":"rec-cache","category":"missing_component","priority":"HIGH","title":"Add Redis In-Memory Caching Layer","description":"Your database queries will benefit from a Redis cache layer to cut p99 latency under heavy traffic.","suggestedNode":{"label":"Redis Cache","shape":"ellipse"}}
+{"id":"rec-gateway","category":"api_suggestion","priority":"CRITICAL","title":"Deploy API Gateway / Reverse Proxy","description":"Introduce an NGINX or AWS ALB API Gateway for SSL termination, rate-limiting, and routing.","suggestedNode":{"label":"API Gateway","shape":"rectangle"}}
+{"id":"rec-db","category":"dbms_guidance","priority":"CRITICAL","title":"Configure Primary Database & Read Replicas","description":"Add a persistent PostgreSQL cluster with automated WAL archival and read-replicas.","suggestedNode":{"label":"Postgres DB (Primary)","shape":"cylinder"}}
+{"id":"rec-queue","category":"scalability_tip","priority":"HIGH","title":"Decouple Heavy Operations via Message Queue","description":"Use Kafka or RabbitMQ for asynchronous background tasks.","suggestedNode":{"label":"Kafka Queue","shape":"ellipse"}}
+```
+
+---
+
+## 🤖 2. AI Suggestion Stream (`/api/ai/suggest`)
 
 Streams structured architecture diagram nodes and edges in NDJSON format based on a natural language prompt.
 
@@ -34,7 +79,7 @@ Streams structured architecture diagram nodes and edges in NDJSON format based o
 
 ---
 
-## 📐 2. Canvas Export & Mermaid Compiler (`/api/export`)
+## 📐 3. Canvas Export & Mermaid Compiler (`/api/export`)
 
 Converts canvas shapes into Mermaid markdown code syntax or returns download URLs.
 
@@ -76,7 +121,7 @@ Converts canvas shapes into Mermaid markdown code syntax or returns download URL
 
 ---
 
-## 🚪 3. Room Management (`/api/rooms`)
+## 🚪 4. Room Management (`/api/rooms`)
 
 Creates a new collaborative room record in Supabase Postgres (or local fallback storage).
 
@@ -110,7 +155,7 @@ Creates a new collaborative room record in Supabase Postgres (or local fallback 
 
 ---
 
-## 🔍 4. Room Details (`/api/rooms/[id]`)
+## 🔍 5. Room Details (`/api/rooms/[id]`)
 
 Fetches metadata and active member list for a room.
 
@@ -136,7 +181,7 @@ Fetches metadata and active member list for a room.
 
 ---
 
-## ✏️ 5. AI Sketch-to-Diagram (`/api/ai/sketch-to-diagram`)
+## ✏️ 6. AI Sketch-to-Diagram (`/api/ai/sketch-to-diagram`)
 
 Converts rough freehand paths into clean geometric diagram shapes.
 
