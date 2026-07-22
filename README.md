@@ -162,4 +162,4 @@ For deeper technical specifications and project guidelines, see:
 
 ## 📄 License
 
-Distributed under the MIT License. Built with ❤️ for developers and system architects.
+Distributed under the [MIT License](./LICENSE). Built with ❤️ for developers and system architects.
