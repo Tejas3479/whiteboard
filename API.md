@@ -192,12 +192,17 @@ Converts rough freehand paths into clean geometric diagram shapes.
 ### Request Body
 ```json
 {
-  "strokePoints": [
-    { "x": 10, "y": 10 },
-    { "x": 100, "y": 10 },
-    { "x": 100, "y": 60 },
-    { "x": 10, "y": 60 }
-  ]
+  "strokes": [
+    {
+      "points": [
+        [10, 10],
+        [100, 10],
+        [100, 60],
+        [10, 60]
+      ]
+    }
+  ],
+  "context": "Architecture sketch"
 }
 ```
 
@@ -205,14 +210,22 @@ Converts rough freehand paths into clean geometric diagram shapes.
 ```json
 {
   "success": true,
-  "detectedShape": "rectangle",
-  "confidence": 0.94,
-  "refinedShapeProps": {
-    "x": 10,
-    "y": 10,
-    "w": 90,
-    "h": 50,
-    "geo": "rectangle"
-  }
+  "vectorizedCount": 1,
+  "mermaidCode": "graph TD\n    NodeA[Service Node] --> NodeB[Target Service]",
+  "shapes": [
+    {
+      "type": "geo",
+      "x": 10,
+      "y": 10,
+      "props": {
+        "geo": "rectangle",
+        "w": 120,
+        "h": 80,
+        "text": "Service Node",
+        "color": "violet",
+        "fill": "semi"
+      }
+    }
+  ]
 }
 ```
