@@ -113,7 +113,7 @@ npm run start
 
 ## 🗄️ Supabase Database Migration Setup
 
-To configure Supabase Postgres persistence, run the SQL migration script located in [`supabase/schema.sql`](file:///c:/Users/tejas/Downloads/whiteboard/supabase/schema.sql):
+To configure Supabase Postgres persistence, run the SQL migration script located in [`supabase/schema.sql`](./supabase/schema.sql):
 
 ```sql
 CREATE TABLE IF NOT EXISTS rooms (
@@ -150,9 +150,13 @@ CREATE POLICY "Anyone can update room snapshots" ON rooms FOR UPDATE USING (true
 
 ## 📚 Documentation Suite
 
-For deeper technical specifications, see:
-- [📁 Technical Architecture Guide (`ARCHITECTURE.md`)](file:///c:/Users/tejas/Downloads/whiteboard/ARCHITECTURE.md)
-- [📁 REST API Reference (`API.md`)](file:///c:/Users/tejas/Downloads/whiteboard/API.md)
+For deeper technical specifications and project guidelines, see:
+- [📁 Technical Architecture Guide (`ARCHITECTURE.md`)](./ARCHITECTURE.md)
+- [📁 REST API Reference (`API.md`)](./API.md)
+- [📁 Contribution Guidelines (`CONTRIBUTING.md`)](./CONTRIBUTING.md)
+- [📁 Security Policy (`SECURITY.md`)](./SECURITY.md)
+- [📁 Code of Conduct (`CODE_OF_CONDUCT.md`)](./CODE_OF_CONDUCT.md)
+- [📁 AI Agent Guidelines (`AGENTS.md`)](./AGENTS.md)
 
 ---
 

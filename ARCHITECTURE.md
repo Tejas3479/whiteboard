@@ -51,14 +51,14 @@ graph TD
 ## ⚡ Core Architecture Modules
 
 ### 1. Canvas Engine (`tldraw v5` Integration)
-- **Path:** [`src/components/canvas-wrapper.tsx`](file:///c:/Users/tejas/Downloads/whiteboard/src/components/canvas-wrapper.tsx) & [`src/app/board/[id]/page.tsx`](file:///c:/Users/tejas/Downloads/whiteboard/src/app/board/[id]/page.tsx)
+- **Path:** [`src/components/canvas-wrapper.tsx`](./src/components/canvas-wrapper.tsx) & [`src/app/board/[id]/page.tsx`](./src/app/board/[id]/page.tsx)
 - **Design:** `tldraw` provides an infinite vector canvas. We isolate the canvas instance and expose the `Editor` object via the `onMount` callback to parent UI overlays (`TopBar`, `Toolbar`, `AiPanel`, `ContextPanel`, `ContextBadges`, `TimeTravelReplay`).
 - **Reactive Updates:** The UI overlays programmatically construct tldraw shape definitions (`editor.createShapes()`), query active shapes (`editor.getCurrentPageShapes()`), center viewport (`editor.centerOnPoint()`), and manipulate zoom (`editor.zoomIn()`, `editor.zoomOut()`).
 
 ---
 
 ### 2. Mess Cleanup & Auto-Layout Engine
-- **Path:** [`src/lib/auto-layout.ts`](file:///c:/Users/tejas/Downloads/whiteboard/src/lib/auto-layout.ts) & [`src/components/toolbar.tsx`](file:///c:/Users/tejas/Downloads/whiteboard/src/components/toolbar.tsx)
+- **Path:** [`src/lib/auto-layout.ts`](./src/lib/auto-layout.ts) & [`src/components/toolbar.tsx`](./src/components/toolbar.tsx)
 - **Graph Topology Extraction:** `extractGraphFromEditor()` scans all `geo`, `text`, `note`, and `arrow` shapes, using both explicit bindings (`boundShapeId`) and spatial proximity heuristics (`< 250px` start/end radius) to deduce diagram topology.
 - **Hierarchical DAG Layering:** `computeAutoLayout()` groups nodes into longest-path dependency layers, calculating centered screen positions with horizontal (`260px`) and vertical (`140px`) spacing while updating connecting arrow coordinates.
 - **Smooth 350ms Easing Animation:** `executeMessCleanup()` uses a `requestAnimationFrame` physics loop with cubic-bezier easing (`easeOutCubic`) to smoothly interpolate shape positions and arrow control points frame-by-frame.
@@ -66,7 +66,7 @@ graph TD
 ---
 
 ### 3. Architecture Assist Deep Analysis Pipeline
-- **Path:** [`src/app/api/ai/architecture-assist/route.ts`](file:///c:/Users/tejas/Downloads/whiteboard/src/app/api/ai/architecture-assist/route.ts) & [`src/components/ai-panel.tsx`](file:///c:/Users/tejas/Downloads/whiteboard/src/components/ai-panel.tsx)
+- **Path:** [`src/app/api/ai/architecture-assist/route.ts`](./src/app/api/ai/architecture-assist/route.ts) & [`src/components/ai-panel.tsx`](./src/components/ai-panel.tsx)
 - **Canvas Serialization & Deep Analysis:**
   1. `handleRunArchitectureAssist()` serializes current canvas shape labels and arrow connections, posting to `/api/ai/architecture-assist`.
   2. The backend constructs a structured architecture context prompt for a specialized Systems Architect AI (`gpt-4o-mini`).
@@ -76,7 +76,7 @@ graph TD
 ---
 
 ### 4. Executable Context Layer & Canvas Badges Overlay
-- **Path:** [`src/store/context-store.ts`](file:///c:/Users/tejas/Downloads/whiteboard/src/store/context-store.ts), [`src/components/context-panel.tsx`](file:///c:/Users/tejas/Downloads/whiteboard/src/components/context-panel.tsx), & [`src/components/context-badges.tsx`](file:///c:/Users/tejas/Downloads/whiteboard/src/components/context-badges.tsx)
+- **Path:** [`src/store/context-store.ts`](./src/store/context-store.ts), [`src/components/context-panel.tsx`](./src/components/context-panel.tsx), & [`src/components/context-badges.tsx`](./src/components/context-badges.tsx)
 - **Per-Element Metadata Store:** Manages `ShapeContext` records containing Notes, reference Links, multi-language Code Snippets, and File attachments, persisting changes per room in `localStorage`.
 - **Reactive Shape Selection Listener:** `BoardPage` monitors shape selection via `editor.store.listen()`, opening the slide-out Context Panel whenever an element is clicked.
 - **Screen-Projected Canvas Badges:** `ContextBadges` listens to camera zoom and pan events, projecting canvas shape coordinates to viewport space via `editor.pageToViewport()`. Renders interactive badge buttons with attachment counts directly on top of annotated shapes.
@@ -84,7 +84,7 @@ graph TD
 ---
 
 ### 5. AI Copilot & Ghost Shape Pipeline
-- **Path:** [`src/app/api/ai/suggest/route.ts`](file:///c:/Users/tejas/Downloads/whiteboard/src/app/api/ai/suggest/route.ts) & [`src/components/ai-panel.tsx`](file:///c:/Users/tejas/Downloads/whiteboard/src/components/ai-panel.tsx)
+- **Path:** [`src/app/api/ai/suggest/route.ts`](./src/app/api/ai/suggest/route.ts) & [`src/components/ai-panel.tsx`](./src/components/ai-panel.tsx)
 - **Streaming Pipeline:**
   1. The user submits a prompt (e.g. *"Kubernetes Cluster Architecture"*).
   2. The `/api/ai/suggest` route returns an `application/x-ndjson` stream where each line contains a JSON node or edge chunk.
@@ -95,7 +95,7 @@ graph TD
 ---
 
 ### 6. Mermaid-to-Canvas Compiler Engine
-- **Path:** [`src/lib/mermaid-compiler.ts`](file:///c:/Users/tejas/Downloads/whiteboard/src/lib/mermaid-compiler.ts)
+- **Path:** [`src/lib/mermaid-compiler.ts`](./src/lib/mermaid-compiler.ts)
 - **Parsing Strategy:**
   - Tokenizes raw Mermaid syntax using regex AST matchers:
     - `ID[(Label)]` -> Database / Cylinder
@@ -109,7 +109,7 @@ graph TD
 ---
 
 ### 7. Teammate Live "Follow Mode"
-- **Path:** [`src/components/presence-cursors.tsx`](file:///c:/Users/tejas/Downloads/whiteboard/src/components/presence-cursors.tsx) & [`src/components/top-bar.tsx`](file:///c:/Users/tejas/Downloads/whiteboard/src/components/top-bar.tsx)
+- **Path:** [`src/components/presence-cursors.tsx`](./src/components/presence-cursors.tsx) & [`src/components/top-bar.tsx`](./src/components/top-bar.tsx)
 - **Mechanism:**
   - Multi-user cursor coordinates are broadcast across connected peers via Liveblocks `useUpdateMyPresence` pointer listeners.
   - When a user activates **Follow Mode** for a teammate avatar, `useAppStore` updates `followingUserId`.
@@ -118,7 +118,7 @@ graph TD
 ---
 
 ### 8. Time-Travel Diagram Replay
-- **Path:** [`src/components/time-travel-replay.tsx`](file:///c:/Users/tejas/Downloads/whiteboard/src/components/time-travel-replay.tsx)
+- **Path:** [`src/components/time-travel-replay.tsx`](./src/components/time-travel-replay.tsx)
 - **Mechanism:**
   - Listens to tldraw document changes (`editor.store.listen()`).
   - Captures incremental page shape snapshots into a rolling history buffer.
@@ -128,7 +128,7 @@ graph TD
 ---
 
 ### 9. Supabase Persistence & Fallback Layer
-- **Path:** [`src/lib/supabase.ts`](file:///c:/Users/tejas/Downloads/whiteboard/src/lib/supabase.ts) & [`supabase/schema.sql`](file:///c:/Users/tejas/Downloads/whiteboard/supabase/schema.sql)
+- **Path:** [`src/lib/supabase.ts`](./src/lib/supabase.ts) & [`supabase/schema.sql`](./supabase/schema.sql)
 - **Design:**
   - `PersistenceService` provides async methods (`createRoom`, `getRoom`, `updateRoomSnapshot`).
   - Queries Supabase REST API endpoints with Row Level Security (RLS) policies when environment variables (`NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`) are set.
@@ -138,6 +138,6 @@ graph TD
 
 ## 🎨 Design System & Styling Tokens
 
-Defined in [`src/app/globals.css`](file:///c:/Users/tejas/Downloads/whiteboard/src/app/globals.css):
+Defined in [`src/app/globals.css`](./src/app/globals.css):
 - **Glassmorphism:** `.glass` class using backdrop blur (`16px`) and subtle borders.
 - **Theme Variables:** CSS variables (`--background`, `--surface`, `--accent`, `--border`, `--text-primary`) supporting seamless Dark and Light theme switching.
