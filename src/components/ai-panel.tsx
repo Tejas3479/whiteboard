@@ -293,17 +293,24 @@ export function AiPanel({ editor }: AiPanelProps) {
     }
   };
 
-  // Add suggested component node directly to canvas
+  // Add suggested component node directly to canvas with smart positioning
   const handleAddSuggestedNode = (node: { label: string; shape: 'rectangle' | 'ellipse' | 'cylinder' }) => {
     if (!editor) return;
     const center = editor.getViewportPageBounds().center;
+    const existingCount = Array.from(editor.getCurrentPageShapes()).length;
+    
+    // Offset added nodes so they don't stack directly on top of each other
+    const col = existingCount % 3;
+    const row = Math.floor(existingCount / 3);
+    const offsetX = (col - 1) * 200;
+    const offsetY = (row % 3) * 120 + 80;
 
     editor.createShapes([
       {
         id: createShapeId(),
         type: 'geo',
-        x: center.x - 80,
-        y: center.y - 40,
+        x: center.x + offsetX,
+        y: center.y + offsetY,
         props: {
           geo: node.shape === 'ellipse' || node.shape === 'cylinder' ? 'ellipse' : 'rectangle',
           w: 160,

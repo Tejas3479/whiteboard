@@ -8,6 +8,8 @@ interface CanvasShapeInput {
   props?: {
     geo?: string;
     text?: string;
+    start?: { boundShapeId?: string };
+    end?: { boundShapeId?: string };
   };
 }
 
@@ -30,17 +32,39 @@ export async function POST(request: Request) {
     const shapes: CanvasShapeInput[] = body?.shapes || [];
     const apiKey = body?.apiKey || process.env.OPENAI_API_KEY;
 
-    // Extract node labels and connections
+    // Map shape IDs to their labels
+    const shapeLabelMap = new Map<string, string>();
     const nodeLabels: string[] = [];
+
     shapes.forEach((s) => {
-      if (s.type === 'geo' && s.props?.text) {
-        nodeLabels.push(s.props.text);
+      if ((s.type === 'geo' || s.type === 'text' || s.type === 'note') && s.id) {
+        const label = s.props?.text?.trim() || (s.type === 'text' ? 'Text Component' : 'Component');
+        shapeLabelMap.set(s.id, label);
+        if (s.props?.text?.trim()) {
+          nodeLabels.push(s.props.text.trim());
+        }
       }
     });
 
-    const contextText = nodeLabels.length > 0
-      ? `Existing architecture components on canvas: ${nodeLabels.join(', ')}`
+    // Extract arrow connection relationships
+    const connectionPairs: string[] = [];
+    shapes.forEach((s) => {
+      if (s.type === 'arrow') {
+        const sourceId = s.props?.start?.boundShapeId;
+        const targetId = s.props?.end?.boundShapeId;
+        if (sourceId && targetId && shapeLabelMap.has(sourceId) && shapeLabelMap.has(targetId)) {
+          connectionPairs.push(`${shapeLabelMap.get(sourceId)} → ${shapeLabelMap.get(targetId)}`);
+        }
+      }
+    });
+
+    let contextText = nodeLabels.length > 0
+      ? `Existing architecture components on canvas: ${nodeLabels.join(', ')}.`
       : 'Canvas is currently blank or contains unlabelled shapes.';
+
+    if (connectionPairs.length > 0) {
+      contextText += ` Active connections: ${connectionPairs.join('; ')}.`;
+    }
 
     if (apiKey) {
       const openai = createOpenAI({ apiKey });

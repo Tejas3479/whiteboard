@@ -33,18 +33,18 @@ export function extractGraphFromEditor(editor: Editor): GraphTopology {
   const outDegrees = new Map<string, number>();
   const adjList = new Map<string, string[]>();
 
-  // Extract nodes (geo shapes)
+  // Extract nodes (geo, text, and note shapes)
   shapes.forEach((s) => {
-    if (s.type === 'geo') {
+    if (s.type === 'geo' || s.type === 'text' || s.type === 'note') {
       const props = s.props as { w?: number; h?: number; text?: string; geo?: string };
       const node: LayoutNode = {
         id: s.id,
-        label: props?.text || '',
+        label: props?.text || (s.type === 'text' ? 'Text' : s.type === 'note' ? 'Sticky Note' : 'Node'),
         x: s.x,
         y: s.y,
         w: props?.w || 160,
         h: props?.h || 80,
-        shapeType: props?.geo || 'rectangle',
+        shapeType: props?.geo || s.type,
       };
       nodes.set(s.id.toString(), node);
       inDegrees.set(s.id.toString(), 0);
@@ -112,16 +112,24 @@ export function extractGraphFromEditor(editor: Editor): GraphTopology {
   return { nodes, edges, inDegrees, outDegrees, adjList };
 }
 
+export interface ArrowUpdate {
+  id: TLShapeId;
+  x: number;
+  y: number;
+  start: Record<string, unknown>;
+  end: Record<string, unknown>;
+}
+
 /**
  * Computes a clean hierarchical DAG & Grid layout to fix visual mess
  */
 export function computeAutoLayout(editor: Editor): {
   nodePositions: Map<TLShapeId, { x: number; y: number }>;
-  updatedArrows: Array<{ id: TLShapeId; start: { x: number; y: number }; end: { x: number; y: number } }>;
+  updatedArrows: ArrowUpdate[];
 } {
   const { nodes, edges, inDegrees, adjList } = extractGraphFromEditor(editor);
   const nodePositions = new Map<TLShapeId, { x: number; y: number }>();
-  const updatedArrows: Array<{ id: TLShapeId; start: { x: number; y: number }; end: { x: number; y: number } }> = [];
+  const updatedArrows: ArrowUpdate[] = [];
 
   if (nodes.size === 0) {
     return { nodePositions, updatedArrows };
@@ -134,42 +142,38 @@ export function computeAutoLayout(editor: Editor): {
 
   const nodeArray = Array.from(nodes.values());
 
-  // Layer assignment (Topological Sort / Sugiyama-style layering)
-  const layers: string[][] = [];
-  const visited = new Set<string>();
+  // Layer assignment using longest-path layering for DAGs
+  const nodeLayerMap = new Map<string, number>();
 
-  // Find root nodes (inDegree === 0)
-  let currentLayer = nodeArray
-    .filter((n) => (inDegrees.get(n.id.toString()) || 0) === 0)
-    .map((n) => n.id.toString());
-
-  if (currentLayer.length === 0 && nodeArray.length > 0) {
-    // If graph has cycles or no in-degree 0, take first node
-    currentLayer = [nodeArray[0].id.toString()];
-  }
-
-  while (currentLayer.length > 0) {
-    layers.push(currentLayer);
-    currentLayer.forEach((id) => visited.add(id));
-
-    const nextLayerSet = new Set<string>();
-    currentLayer.forEach((id) => {
-      const neighbors = adjList.get(id) || [];
-      neighbors.forEach((nbr) => {
-        if (!visited.has(nbr)) {
-          nextLayerSet.add(nbr);
+  // Group nodes into layers
+  const layerGroups = new Map<number, string[]>();
+  nodeArray.forEach((node) => {
+    const idStr = node.id.toString();
+    const inDeg = inDegrees.get(idStr) || 0;
+    let layer = 0;
+    
+    if (inDeg > 0) {
+      // Find max layer of incoming predecessors + 1
+      let maxPredLayer = 0;
+      nodes.forEach((predNode) => {
+        const predId = predNode.id.toString();
+        const predNeighbors = adjList.get(predId) || [];
+        if (predNeighbors.includes(idStr)) {
+          maxPredLayer = Math.max(maxPredLayer, (nodeLayerMap.get(predId) || 0) + 1);
         }
       });
-    });
+      layer = maxPredLayer;
+    }
+    
+    nodeLayerMap.set(idStr, layer);
+    if (!layerGroups.has(layer)) {
+      layerGroups.set(layer, []);
+    }
+    layerGroups.get(layer)!.push(idStr);
+  });
 
-    currentLayer = Array.from(nextLayerSet);
-  }
-
-  // Any remaining unvisited nodes get added to a final grid layer
-  const unvisitedNodes = nodeArray.filter((n) => !visited.has(n.id.toString()));
-  if (unvisitedNodes.length > 0) {
-    layers.push(unvisitedNodes.map((n) => n.id.toString()));
-  }
+  const sortedLayerKeys = Array.from(layerGroups.keys()).sort((a, b) => a - b);
+  const layers: string[][] = sortedLayerKeys.map((key) => layerGroups.get(key)!);
 
   // Calculate layout coordinates
   const LAYER_SPACING_X = 260; // Horizontal gap between layers
@@ -210,14 +214,22 @@ export function computeAutoLayout(editor: Editor): {
       const endX = targetPos.x;
       const endY = targetPos.y + (targetNode?.h || 80) / 2;
 
+      const existingArrow = editor.getShape(edge.id);
+      const existingProps = (existingArrow?.props || {}) as {
+        start?: Record<string, unknown>;
+        end?: Record<string, unknown>;
+      };
+
+      const hasStartBinding = existingProps.start?.type === 'binding';
+      const hasEndBinding = existingProps.end?.type === 'binding';
+
       updatedArrows.push({
         id: edge.id,
-        start: { x: 0, y: 0 },
-        end: { x: endX - startX, y: endY - startY },
+        x: Math.round(startX),
+        y: Math.round(startY),
+        start: hasStartBinding ? existingProps.start! : { type: 'point', x: 0, y: 0 },
+        end: hasEndBinding ? existingProps.end! : { type: 'point', x: endX - startX, y: endY - startY },
       });
-
-      // Update arrow root position as well
-      nodePositions.set(edge.id, { x: Math.round(startX), y: Math.round(startY) });
     }
   });
 
@@ -225,15 +237,16 @@ export function computeAutoLayout(editor: Editor): {
 }
 
 /**
- * Executes Mess Cleanup with optional animated layout transition
+ * Executes Mess Cleanup with clean layout transition
  */
 export function executeMessCleanup(editor: Editor): number {
   const { nodePositions, updatedArrows } = computeAutoLayout(editor);
 
-  if (nodePositions.size === 0) return 0;
+  if (nodePositions.size === 0 && updatedArrows.length === 0) return 0;
 
   const shapeUpdates: Array<Record<string, unknown>> = [];
 
+  // Update nodes
   nodePositions.forEach((pos, shapeId) => {
     const existing = editor.getShape(shapeId);
     if (existing) {
@@ -246,12 +259,15 @@ export function executeMessCleanup(editor: Editor): number {
     }
   });
 
-  updatedArrows.forEach(({ id, start, end }) => {
+  // Update arrows (single update per arrow ID)
+  updatedArrows.forEach(({ id, x, y, start, end }) => {
     const existing = editor.getShape(id);
     if (existing && existing.type === 'arrow') {
       shapeUpdates.push({
         id,
         type: 'arrow',
+        x,
+        y,
         props: {
           ...(existing.props as object),
           start,

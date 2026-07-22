@@ -27,12 +27,13 @@ export default function BoardPage() {
   
   const setCurrentRoom = useAppStore((state) => state.setCurrentRoom);
   const aiPanelOpen = useAppStore((state) => state.aiPanelOpen);
-  const { openContextPanel, isContextPanelOpen } = useContextStore();
+  const { openContextPanel, closeContextPanel, activeShapeId, setRoomId } = useContextStore();
   
   const [editor, setEditor] = useState<Editor | null>(null);
 
   useEffect(() => {
     if (id) {
+      setRoomId(id);
       setCurrentRoom({
         id,
         name: `Room ${id.substring(0, 4)}`,
@@ -40,19 +41,22 @@ export default function BoardPage() {
         updatedAt: new Date()
       });
     }
-  }, [id, setCurrentRoom]);
+  }, [id, setCurrentRoom, setRoomId]);
 
-  // Listen to shape selection changes on canvas
+  // Reactive selection listener for shape selection changes on canvas
   useEffect(() => {
     if (!editor) return;
 
     const unlisten = editor.store.listen(
       () => {
         const selectedShapes = Array.from(editor.getSelectedShapes());
-        if (selectedShapes.length > 0 && !isContextPanelOpen) {
+        if (selectedShapes.length > 0) {
           const first = selectedShapes[0];
-          const label = (first.props as { text?: string })?.text || 'Selected Component';
-          openContextPanel(first.id.toString(), label);
+          const shapeIdStr = first.id.toString();
+          if (shapeIdStr !== activeShapeId) {
+            const label = (first.props as { text?: string })?.text || 'Selected Component';
+            openContextPanel(shapeIdStr, label);
+          }
         }
       },
       { scope: 'session', source: 'user' }
@@ -61,7 +65,7 @@ export default function BoardPage() {
     return () => {
       unlisten();
     };
-  }, [editor, isContextPanelOpen, openContextPanel]);
+  }, [editor, activeShapeId, openContextPanel, closeContextPanel]);
 
   return (
     <LiveblocksProvider roomId={id || "default-room"}>

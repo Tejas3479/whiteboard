@@ -29,6 +29,10 @@ export interface ShapeContext {
 }
 
 interface ContextState {
+  // Room scope
+  roomId: string;
+  setRoomId: (roomId: string) => void;
+
   // Map of shapeId -> ShapeContext
   contexts: Record<string, ShapeContext>;
   
@@ -59,11 +63,37 @@ const defaultContext = (shapeId: string): ShapeContext => ({
   files: [],
 });
 
+function loadContextsFromStorage(roomId: string): Record<string, ShapeContext> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = localStorage.getItem(`synapseboard_context_${roomId}`);
+    return raw ? (JSON.parse(raw) as Record<string, ShapeContext>) : {};
+  } catch (err) {
+    console.error('Failed to load shape contexts:', err);
+    return {};
+  }
+}
+
+function saveContextsToStorage(roomId: string, contexts: Record<string, ShapeContext>) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(`synapseboard_context_${roomId}`, JSON.stringify(contexts));
+  } catch (err) {
+    console.error('Failed to save shape contexts:', err);
+  }
+}
+
 export const useContextStore = create<ContextState>((set, get) => ({
+  roomId: 'default-room',
   contexts: {},
   activeShapeId: null,
   activeShapeLabel: 'Selected Component',
   isContextPanelOpen: false,
+
+  setRoomId: (roomId: string) => {
+    const loaded = loadContextsFromStorage(roomId);
+    set({ roomId, contexts: loaded });
+  },
 
   openContextPanel: (shapeId: string, shapeLabel?: string) => {
     set({
@@ -84,12 +114,12 @@ export const useContextStore = create<ContextState>((set, get) => ({
   updateNotes: (shapeId: string, notes: string) => {
     set((state) => {
       const current = state.contexts[shapeId] || defaultContext(shapeId);
-      return {
-        contexts: {
-          ...state.contexts,
-          [shapeId]: { ...current, notes },
-        },
+      const updated = {
+        ...state.contexts,
+        [shapeId]: { ...current, notes },
       };
+      saveContextsToStorage(state.roomId, updated);
+      return { contexts: updated };
     });
   },
 
@@ -97,12 +127,12 @@ export const useContextStore = create<ContextState>((set, get) => ({
     set((state) => {
       const current = state.contexts[shapeId] || defaultContext(shapeId);
       const newLink: ContextLink = { ...link, id: Date.now().toString() };
-      return {
-        contexts: {
-          ...state.contexts,
-          [shapeId]: { ...current, links: [...current.links, newLink] },
-        },
+      const updated = {
+        ...state.contexts,
+        [shapeId]: { ...current, links: [...current.links, newLink] },
       };
+      saveContextsToStorage(state.roomId, updated);
+      return { contexts: updated };
     });
   },
 
@@ -110,15 +140,15 @@ export const useContextStore = create<ContextState>((set, get) => ({
     set((state) => {
       const current = state.contexts[shapeId];
       if (!current) return state;
-      return {
-        contexts: {
-          ...state.contexts,
-          [shapeId]: {
-            ...current,
-            links: current.links.filter((l) => l.id !== linkId),
-          },
+      const updated = {
+        ...state.contexts,
+        [shapeId]: {
+          ...current,
+          links: current.links.filter((l) => l.id !== linkId),
         },
       };
+      saveContextsToStorage(state.roomId, updated);
+      return { contexts: updated };
     });
   },
 
@@ -126,12 +156,12 @@ export const useContextStore = create<ContextState>((set, get) => ({
     set((state) => {
       const current = state.contexts[shapeId] || defaultContext(shapeId);
       const newSnippet: ContextCodeSnippet = { ...snippet, id: Date.now().toString() };
-      return {
-        contexts: {
-          ...state.contexts,
-          [shapeId]: { ...current, codeSnippets: [...current.codeSnippets, newSnippet] },
-        },
+      const updated = {
+        ...state.contexts,
+        [shapeId]: { ...current, codeSnippets: [...current.codeSnippets, newSnippet] },
       };
+      saveContextsToStorage(state.roomId, updated);
+      return { contexts: updated };
     });
   },
 
@@ -139,15 +169,15 @@ export const useContextStore = create<ContextState>((set, get) => ({
     set((state) => {
       const current = state.contexts[shapeId];
       if (!current) return state;
-      return {
-        contexts: {
-          ...state.contexts,
-          [shapeId]: {
-            ...current,
-            codeSnippets: current.codeSnippets.filter((c) => c.id !== snippetId),
-          },
+      const updated = {
+        ...state.contexts,
+        [shapeId]: {
+          ...current,
+          codeSnippets: current.codeSnippets.filter((c) => c.id !== snippetId),
         },
       };
+      saveContextsToStorage(state.roomId, updated);
+      return { contexts: updated };
     });
   },
 
@@ -155,12 +185,12 @@ export const useContextStore = create<ContextState>((set, get) => ({
     set((state) => {
       const current = state.contexts[shapeId] || defaultContext(shapeId);
       const newFile: ContextFile = { ...file, id: Date.now().toString() };
-      return {
-        contexts: {
-          ...state.contexts,
-          [shapeId]: { ...current, files: [...current.files, newFile] },
-        },
+      const updated = {
+        ...state.contexts,
+        [shapeId]: { ...current, files: [...current.files, newFile] },
       };
+      saveContextsToStorage(state.roomId, updated);
+      return { contexts: updated };
     });
   },
 
@@ -168,15 +198,15 @@ export const useContextStore = create<ContextState>((set, get) => ({
     set((state) => {
       const current = state.contexts[shapeId];
       if (!current) return state;
-      return {
-        contexts: {
-          ...state.contexts,
-          [shapeId]: {
-            ...current,
-            files: current.files.filter((f) => f.id !== fileId),
-          },
+      const updated = {
+        ...state.contexts,
+        [shapeId]: {
+          ...current,
+          files: current.files.filter((f) => f.id !== fileId),
         },
       };
+      saveContextsToStorage(state.roomId, updated);
+      return { contexts: updated };
     });
   },
 
