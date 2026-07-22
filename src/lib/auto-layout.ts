@@ -236,50 +236,140 @@ export function computeAutoLayout(editor: Editor): {
   return { nodePositions, updatedArrows };
 }
 
+// Global animation state to allow cancellation of previous active cleanup animations
+let activeCleanupAnimationId: number | null = null;
+
+function easeOutCubic(t: number): number {
+  return 1 - Math.pow(1 - t, 3);
+}
+
 /**
- * Executes Mess Cleanup with clean layout transition
+ * Executes Mess Cleanup with smooth animated transitions
  */
-export function executeMessCleanup(editor: Editor): number {
+export async function executeMessCleanup(editor: Editor, durationMs = 350): Promise<number> {
+  if (activeCleanupAnimationId !== null) {
+    cancelAnimationFrame(activeCleanupAnimationId);
+    activeCleanupAnimationId = null;
+  }
+
   const { nodePositions, updatedArrows } = computeAutoLayout(editor);
 
   if (nodePositions.size === 0 && updatedArrows.length === 0) return 0;
 
-  const shapeUpdates: Array<Record<string, unknown>> = [];
+  interface NodeAnimState {
+    id: TLShapeId;
+    type: string;
+    startX: number;
+    startY: number;
+    targetX: number;
+    targetY: number;
+  }
 
-  // Update nodes
+  interface ArrowAnimState {
+    id: TLShapeId;
+    startX: number;
+    startY: number;
+    targetX: number;
+    targetY: number;
+    startProp: Record<string, unknown>;
+    startEndPtX: number;
+    startEndPtY: number;
+    targetEndPtX: number;
+    targetEndPtY: number;
+  }
+
+  const nodesToAnimate: NodeAnimState[] = [];
   nodePositions.forEach((pos, shapeId) => {
     const existing = editor.getShape(shapeId);
     if (existing) {
-      shapeUpdates.push({
+      nodesToAnimate.push({
         id: shapeId,
         type: existing.type,
-        x: pos.x,
-        y: pos.y,
+        startX: existing.x,
+        startY: existing.y,
+        targetX: pos.x,
+        targetY: pos.y,
       });
     }
   });
 
-  // Update arrows (single update per arrow ID)
-  updatedArrows.forEach(({ id, x, y, start, end }) => {
+  const arrowsToAnimate: ArrowAnimState[] = [];
+  updatedArrows.forEach(({ id, x: targetX, y: targetY, start, end }) => {
     const existing = editor.getShape(id);
     if (existing && existing.type === 'arrow') {
-      shapeUpdates.push({
+      const existingProps = (existing.props || {}) as {
+        end?: { x?: number; y?: number };
+      };
+      const curEnd = existingProps.end || { x: 0, y: 0 };
+      const targetEndPt = (end as { x?: number; y?: number }) || { x: 0, y: 0 };
+
+      arrowsToAnimate.push({
         id,
-        type: 'arrow',
-        x,
-        y,
-        props: {
-          ...(existing.props as object),
-          start,
-          end,
-        },
+        startX: existing.x,
+        startY: existing.y,
+        targetX,
+        targetY,
+        startProp: start,
+        startEndPtX: curEnd.x || 0,
+        startEndPtY: curEnd.y || 0,
+        targetEndPtX: targetEndPt.x || 0,
+        targetEndPtY: targetEndPt.y || 0,
       });
     }
   });
 
-  if (shapeUpdates.length > 0) {
-    editor.updateShapes(shapeUpdates as Parameters<typeof editor.updateShapes>[0]);
-  }
+  const totalCount = nodesToAnimate.length + arrowsToAnimate.length;
+  if (totalCount === 0) return 0;
 
-  return shapeUpdates.length;
+  return new Promise<number>((resolve) => {
+    const startTime = performance.now();
+
+    function step(now: number) {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / durationMs, 1);
+      const ease = easeOutCubic(progress);
+
+      const shapeUpdates: Array<Record<string, unknown>> = [];
+
+      nodesToAnimate.forEach((n) => {
+        shapeUpdates.push({
+          id: n.id,
+          type: n.type,
+          x: Math.round(n.startX + (n.targetX - n.startX) * ease),
+          y: Math.round(n.startY + (n.targetY - n.startY) * ease),
+        });
+      });
+
+      arrowsToAnimate.forEach((a) => {
+        shapeUpdates.push({
+          id: a.id,
+          type: 'arrow',
+          x: Math.round(a.startX + (a.targetX - a.startX) * ease),
+          y: Math.round(a.startY + (a.targetY - a.startY) * ease),
+          props: {
+            ...(editor.getShape(a.id)?.props as object),
+            start: a.startProp,
+            end: {
+              type: 'point',
+              x: Math.round(a.startEndPtX + (a.targetEndPtX - a.startEndPtX) * ease),
+              y: Math.round(a.startEndPtY + (a.targetEndPtY - a.startEndPtY) * ease),
+            },
+          },
+        });
+      });
+
+      if (shapeUpdates.length > 0) {
+        editor.updateShapes(shapeUpdates as Parameters<typeof editor.updateShapes>[0]);
+      }
+
+      if (progress < 1) {
+        activeCleanupAnimationId = requestAnimationFrame(step);
+      } else {
+        activeCleanupAnimationId = null;
+        resolve(totalCount);
+      }
+    }
+
+    activeCleanupAnimationId = requestAnimationFrame(step);
+  });
 }

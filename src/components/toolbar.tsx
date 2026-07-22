@@ -70,9 +70,9 @@ export function Toolbar({ editor }: ToolbarProps) {
     }
   };
 
-  const handleMessCleanup = () => {
+  const handleMessCleanup = async () => {
     if (!editor) return;
-    const count = executeMessCleanup(editor);
+    const count = await executeMessCleanup(editor);
     setCleanedCount(count);
     setTimeout(() => setCleanedCount(null), 2000);
   };
