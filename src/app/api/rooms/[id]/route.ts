@@ -28,6 +28,12 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
+    const deleted = await PersistenceService.deleteRoom(id);
+
+    if (!deleted) {
+      return NextResponse.json({ error: 'Room not found or delete failed' }, { status: 404 });
+    }
+
     return NextResponse.json({ success: true, deletedRoomId: id });
   } catch (error) {
     console.error('Delete room error:', error);

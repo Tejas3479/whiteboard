@@ -155,14 +155,14 @@ Creates a new collaborative room record in Supabase Postgres (or local fallback 
 
 ---
 
-## 🔍 5. Room Details (`/api/rooms/[id]`)
+## 🔍 5. Room Details & Deletion (`/api/rooms/[id]`)
 
-Fetches metadata and active member list for a room.
+Fetches metadata for a room or deletes a room from database persistence.
 
 - **URL:** `/api/rooms/:id`
-- **Method:** `GET`
+- **Method:** `GET` | `DELETE`
 
-### Response (`application/json`)
+### GET Response (`application/json`)
 ```json
 {
   "room": {
@@ -176,6 +176,14 @@ Fetches metadata and active member list for a room.
     { "id": "usr-1", "name": "Alice", "role": "owner" },
     { "id": "usr-2", "name": "Bob", "role": "editor" }
   ]
+}
+```
+
+### DELETE Response (`application/json`)
+```json
+{
+  "success": true,
+  "deletedRoomId": "x9a2k4n18z"
 }
 ```
 

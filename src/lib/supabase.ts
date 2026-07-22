@@ -115,4 +115,25 @@ export class PersistenceService {
     }
     return true;
   }
+
+  public static async deleteRoom(id: string): Promise<boolean> {
+    if (this.supabaseUrl && this.supabaseKey) {
+      try {
+        const res = await fetch(`${this.supabaseUrl}/rest/v1/rooms?id=eq.${id}`, {
+          method: 'DELETE',
+          headers: {
+            'apikey': this.supabaseKey,
+            'Authorization': `Bearer ${this.supabaseKey}`,
+          },
+        });
+
+        if (res.ok) return true;
+      } catch (err) {
+        console.warn('Supabase deleteRoom warning:', err);
+      }
+    }
+
+    memoryRooms.delete(id);
+    return true;
+  }
 }
