@@ -8,41 +8,41 @@ This document provides a comprehensive technical breakdown of **SynapseBoard**'s
 
 ```mermaid
 graph TD
-    UserClient[Web Browser / User Client] -->|Next.js 16 App Router| UI[React 19 UI Layer]
+    UserClient["Web Browser / User Client"] -->|Next.js 16 App Router| UI["React 19 UI Layer"]
     
     subgraph UI Overlay & Canvas
-        UI --> TopBar[Top Bar & Multi-Modal Controls]
-        UI --> Toolbar[Left Vector Toolbar & Mess Cleanup]
-        UI --> AIPanel[AI Copilot & Architecture Assist]
-        UI --> ContextPanel[Context Layer Panel]
-        UI --> ContextBadges[Canvas Shape Badges Overlay]
-        UI --> Canvas[tldraw v5 Vector Engine]
-        UI --> ReplayBar[Time-Travel Replay Bar]
+        UI --> TopBar["Top Bar & Multi-Modal Controls"]
+        UI --> Toolbar["Left Vector Toolbar & Mess Cleanup"]
+        UI --> AIPanel["AI Copilot & Architecture Assist"]
+        UI --> ContextPanel["Context Layer Panel"]
+        UI --> ContextBadges["Canvas Shape Badges Overlay"]
+        UI --> Canvas["tldraw v5 Vector Engine"]
+        UI --> ReplayBar["Time-Travel Replay Bar"]
     end
 
     subgraph Core Logic & State Management
-        UI --> Store[Zustand Global App Store]
-        UI --> ContextStore[Zustand Context Store]
-        Toolbar -->|Auto-Align & Animation| AutoLayout[Auto-Layout & DAG Engine]
+        UI --> Store["Zustand Global App Store"]
+        UI --> ContextStore["Zustand Context Store"]
+        Toolbar -->|Auto-Align & Animation| AutoLayout["Auto-Layout & DAG Engine"]
         AutoLayout -->|Batch Update| Canvas
         ContextBadges -->|Screen Projection| Canvas
         Store -->|State Sync| Canvas
-        Store -->|Presence Tracking| Cursors[Presence & Cursors Overlay]
+        Store -->|Presence Tracking| Cursors["Presence & Cursors Overlay"]
     end
 
     subgraph Backend Services & APIs
-        AIPanel -->|NDJSON Stream| AIService[/api/ai/suggest]
-        AIPanel -->|Canvas Shapes Payload| ArchAssist[/api/ai/architecture-assist]
-        TopBar -->|Mermaid / SVG / PNG| ExportService[/api/export]
-        TopBar -->|Room CRUD| RoomsService[/api/rooms]
+        AIPanel -->|NDJSON Stream| AIService["/api/ai/suggest Route"]
+        AIPanel -->|Canvas Shapes Payload| ArchAssist["/api/ai/architecture-assist Route"]
+        TopBar -->|Mermaid / SVG / PNG| ExportService["/api/export Route"]
+        TopBar -->|Room CRUD| RoomsService["/api/rooms Route"]
         
-        AIService -->|Vercel AI SDK| OpenAI[OpenAI GPT-4o-mini]
+        AIService -->|Vercel AI SDK| OpenAI["OpenAI GPT-4o-mini"]
         ArchAssist -->|Deep Analysis Stream| OpenAI
-        RoomsService -->|REST / RLS| Supabase[(Supabase Postgres)]
+        RoomsService -->|REST / RLS| Supabase["Supabase Postgres DB"]
     end
 
     subgraph Multiplayer Network
-        Cursors -->|Liveblocks Yjs WebSocket| Liveblocks[Liveblocks Cloud]
+        Cursors -->|Liveblocks Yjs WebSocket| Liveblocks["Liveblocks Cloud"]
     end
 ```
 
