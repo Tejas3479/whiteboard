@@ -46,8 +46,95 @@ export function AiPanel({ editor }: AiPanelProps) {
     "Auth Flow", "API Architecture", "Database Schema", "AWS Serverless", "Kubernetes Cluster", "Kafka Event Pipeline"
   ];
 
+  const { ghostShapeIds, setGhostShapeIds, clearGhostShapeIds } = useAppStore();
+
+  const handlePreviewGhostShapes = useCallback((sugg: AISuggestion) => {
+    if (!editor) return;
+    const center = editor.getViewportPageBounds().center;
+    let parsedData: ParsedSuggestionData = {};
+
+    try {
+      if (sugg.code) {
+        parsedData = JSON.parse(sugg.code) as ParsedSuggestionData;
+      }
+    } catch (err) {
+      console.error('Failed to parse suggestion code:', err);
+    }
+
+    const nodes: StreamNode[] = parsedData.nodes && parsedData.nodes.length > 0 ? parsedData.nodes : [
+      { id: '1', label: 'Client App', shape: 'rectangle', x: 0, y: 0 },
+      { id: '2', label: 'API Gateway', shape: 'rectangle', x: 220, y: 0 },
+      { id: '3', label: 'Database', shape: 'ellipse', x: 440, y: 0 },
+    ];
+
+    const createdGhostIds: string[] = [];
+    const newGhostShapes: Array<Record<string, unknown>> = [];
+
+    nodes.forEach((n, idx) => {
+      const shapeId = createShapeId();
+      createdGhostIds.push(shapeId);
+
+      const posX = center.x - 220 + (n.x || idx * 220);
+      const posY = center.y - 40 + (n.y || 0);
+
+      newGhostShapes.push({
+        id: shapeId,
+        type: 'geo',
+        x: posX,
+        y: posY,
+        props: {
+          geo: n.shape === 'ellipse' || n.shape === 'cylinder' ? 'ellipse' : 'rectangle',
+          w: 160,
+          h: 80,
+          color: 'grey',
+          fill: 'pattern',
+          dash: 'dashed',
+          text: `Ghost: ${n.label || 'Node'}`,
+        },
+      });
+    });
+
+    const edges: StreamEdge[] = parsedData.edges || [
+      { source: nodes[0]?.id || '0', target: nodes[1]?.id || '1' },
+      { source: nodes[1]?.id || '1', target: nodes[2]?.id || '2' },
+    ];
+
+    edges.forEach((e, idx) => {
+      const arrowId = createShapeId();
+      createdGhostIds.push(arrowId);
+      const startX = center.x - 60 + idx * 220;
+      const startY = center.y;
+
+      newGhostShapes.push({
+        id: arrowId,
+        type: 'arrow',
+        x: startX,
+        y: startY,
+        props: {
+          start: { x: 0, y: 0 },
+          end: { x: 90, y: 0 },
+          dash: 'dashed',
+          color: 'grey',
+        },
+      });
+    });
+
+    editor.createShapes(newGhostShapes as unknown as Parameters<typeof editor.createShapes>[0]);
+    setGhostShapeIds(createdGhostIds);
+  }, [editor, setGhostShapeIds]);
+
   const handleAcceptSuggestion = useCallback((sugg: AISuggestion) => {
     if (editor) {
+      // If we have active ghost shapes, clean them up first
+      if (ghostShapeIds.length > 0) {
+        try {
+          editor.deleteShapes(ghostShapeIds as unknown as Parameters<typeof editor.deleteShapes>[0]);
+        } catch {
+          // ignore cleanup errors
+        }
+        clearGhostShapeIds();
+      }
+
       const center = editor.getViewportPageBounds().center;
       let parsedData: ParsedSuggestionData = {};
 
@@ -60,9 +147,9 @@ export function AiPanel({ editor }: AiPanelProps) {
       }
 
       const nodes: StreamNode[] = parsedData.nodes && parsedData.nodes.length > 0 ? parsedData.nodes : [
-        { id: '1', label: 'Client App', shape: 'rectangle', x: 100, y: 100 },
-        { id: '2', label: 'API Gateway', shape: 'rectangle', x: 350, y: 100 },
-        { id: '3', label: 'Database', shape: 'ellipse', x: 600, y: 100 },
+        { id: '1', label: 'Client App', shape: 'rectangle', x: 0, y: 0 },
+        { id: '2', label: 'API Gateway', shape: 'rectangle', x: 220, y: 0 },
+        { id: '3', label: 'Database', shape: 'ellipse', x: 440, y: 0 },
       ];
 
       const shapeMap: Record<string, TLShapeId> = {};
@@ -75,7 +162,7 @@ export function AiPanel({ editor }: AiPanelProps) {
         }
         shapeMap[idx.toString()] = shapeId;
 
-        const posX = center.x - 250 + (n.x || idx * 220);
+        const posX = center.x - 220 + (n.x || idx * 220);
         const posY = center.y - 40 + (n.y || 0);
 
         newShapes.push({
@@ -89,6 +176,7 @@ export function AiPanel({ editor }: AiPanelProps) {
             h: 80,
             color: idx === 0 ? 'violet' : idx === 1 ? 'blue' : 'green',
             fill: 'semi',
+            dash: 'draw',
             text: n.label || 'Node',
           },
         });
@@ -101,7 +189,7 @@ export function AiPanel({ editor }: AiPanelProps) {
       ];
 
       edges.forEach((e, idx) => {
-        const startX = center.x - 90 + idx * 220;
+        const startX = center.x - 60 + idx * 220;
         const startY = center.y;
         newShapes.push({
           id: createShapeId(),
@@ -111,6 +199,8 @@ export function AiPanel({ editor }: AiPanelProps) {
           props: {
             start: { x: 0, y: 0 },
             end: { x: 90, y: 0 },
+            dash: 'draw',
+            color: 'violet',
           },
         });
       });
@@ -118,37 +208,21 @@ export function AiPanel({ editor }: AiPanelProps) {
       editor.createShapes(newShapes as unknown as Parameters<typeof editor.createShapes>[0]);
     }
     removeAiSuggestion(sugg.id);
-  }, [editor, removeAiSuggestion]);
-
-  const handlePreviewGhostShapes = (sugg: AISuggestion) => {
-    if (!editor) return;
-    const center = editor.getViewportPageBounds().center;
-    const shapeId = createShapeId();
-
-    editor.createShapes([
-      {
-        id: shapeId,
-        type: 'geo',
-        x: center.x - 80,
-        y: center.y - 40,
-        props: {
-          geo: 'rectangle',
-          w: 180,
-          h: 90,
-          color: 'grey',
-          fill: 'pattern',
-          dash: 'dashed',
-          text: `Ghost: ${sugg.title || 'Preview'}`,
-        },
-      },
-    ] as unknown as Parameters<typeof editor.createShapes>[0]);
-  };
+  }, [editor, ghostShapeIds, clearGhostShapeIds, removeAiSuggestion]);
 
   const handleRejectSuggestion = (suggId: string) => {
+    if (editor && ghostShapeIds.length > 0) {
+      try {
+        editor.deleteShapes(ghostShapeIds as unknown as Parameters<typeof editor.deleteShapes>[0]);
+      } catch {
+        // ignore
+      }
+      clearGhostShapeIds();
+    }
     removeAiSuggestion(suggId);
   };
 
-  // Keyboard shortcut: Press Tab to accept top suggestion
+  // Keyboard shortcut: Press Tab to accept top suggestion & commit ghost shapes
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Tab' && aiSuggestions && aiSuggestions.length > 0) {

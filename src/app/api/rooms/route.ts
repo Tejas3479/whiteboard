@@ -1,8 +1,5 @@
 import { NextResponse } from 'next/server';
-import { nanoid } from 'nanoid';
-
-// In-memory persistent store (backed by Supabase or DB env when available)
-const roomsStore = new Map<string, { id: string; name: string; isPublic: boolean; createdAt: string; updatedAt: string }>();
+import { PersistenceService } from '@/lib/supabase';
 
 export async function POST(request: Request) {
   try {
@@ -10,23 +7,14 @@ export async function POST(request: Request) {
     const name = body?.name || 'Untitled Architecture Board';
     const isPublic = body?.isPublic ?? true;
 
-    const roomId = nanoid(10);
-    const room = {
-      id: roomId,
-      name,
-      isPublic,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    roomsStore.set(roomId, room);
+    const room = await PersistenceService.createRoom(name, isPublic);
 
     const origin = request.headers.get('origin') || 'http://localhost:3000';
-    const shareUrl = `${origin}/board/${roomId}`;
+    const shareUrl = `${origin}/board/${room.id}`;
 
     return NextResponse.json({
       success: true,
-      roomId,
+      roomId: room.id,
       shareUrl,
       room,
     });
@@ -37,6 +25,5 @@ export async function POST(request: Request) {
 }
 
 export async function GET() {
-  const rooms = Array.from(roomsStore.values());
-  return NextResponse.json({ rooms });
+  return NextResponse.json({ success: true, message: 'Room API ready' });
 }

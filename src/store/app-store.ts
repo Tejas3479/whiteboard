@@ -67,6 +67,16 @@ interface AppState {
   // AI prompt
   aiPrompt: string;
   setAiPrompt: (prompt: string) => void;
+
+  // Follow Mode
+  followingUserId: string | null;
+  setFollowingUserId: (id: string | null) => void;
+
+  // Ghost Shapes
+  ghostShapeIds: string[];
+  setGhostShapeIds: (ids: string[]) => void;
+  addGhostShapeId: (id: string) => void;
+  clearGhostShapeIds: () => void;
 }
 
 const COLORS = ['#f472b6', '#34d399', '#fbbf24', '#60a5fa', '#a78bfa'];
@@ -142,4 +152,14 @@ export const useAppStore = create<AppState>((set) => ({
   // AI Prompt
   aiPrompt: '',
   setAiPrompt: (prompt) => set({ aiPrompt: prompt }),
+
+  // Follow Mode
+  followingUserId: null,
+  setFollowingUserId: (id) => set({ followingUserId: id }),
+
+  // Ghost Shapes
+  ghostShapeIds: [],
+  setGhostShapeIds: (ids) => set({ ghostShapeIds: ids }),
+  addGhostShapeId: (id) => set((state) => ({ ghostShapeIds: [...state.ghostShapeIds, id] })),
+  clearGhostShapeIds: () => set({ ghostShapeIds: [] }),
 }));

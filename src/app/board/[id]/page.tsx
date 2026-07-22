@@ -12,6 +12,7 @@ import { AiPanel } from "@/components/ai-panel";
 import { PresenceCursors } from "@/components/presence-cursors";
 import { ZoomControls } from "@/components/zoom-controls";
 import { LiveblocksProvider } from "@/components/liveblocks-provider";
+import { TimeTravelReplay } from "@/components/time-travel-replay";
 
 const CanvasWrapper = dynamic(() => import("@/components/canvas-wrapper"), { 
   ssr: false,
@@ -66,6 +67,11 @@ export default function BoardPage() {
               </div>
             )}
 
+            {/* Bottom Replay Control */}
+            <div className="pointer-events-auto">
+              <TimeTravelReplay editor={editor} />
+            </div>
+
             {/* Bottom Right Zoom Controls */}
             <div className="pointer-events-auto absolute bottom-4 right-4">
               <ZoomControls editor={editor} />
@@ -73,7 +79,7 @@ export default function BoardPage() {
           </div>
 
           {/* Presence Layer */}
-          <PresenceCursors />
+          <PresenceCursors editor={editor} />
         </div>
       </div>
     </LiveblocksProvider>

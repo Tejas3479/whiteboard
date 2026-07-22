@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { PersistenceService } from '@/lib/supabase';
 
 export async function GET(
   request: Request,
@@ -6,14 +7,10 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    
+    const room = await PersistenceService.getRoom(id);
+
     return NextResponse.json({
-      room: {
-        id,
-        name: `Architecture Room ${id.substring(0, 4)}`,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
+      room,
       members: [
         { id: 'usr-1', name: 'Alice', role: 'owner' },
         { id: 'usr-2', name: 'Bob', role: 'editor' },

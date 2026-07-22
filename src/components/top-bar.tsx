@@ -5,20 +5,20 @@ import Link from 'next/link';
 import { Sparkles, Link as LinkIcon, Sun, Moon, Download, Check, FileCode, Upload, Eye, Image as ImageIcon } from 'lucide-react';
 import { useAppStore } from '@/store/app-store';
 import { Editor, createShapeId, TLShapeId } from 'tldraw';
+import { parseAndCompileMermaid } from '@/lib/mermaid-compiler';
 
 interface TopBarProps {
   editor?: Editor | null;
 }
 
 export function TopBar({ editor }: TopBarProps) {
-  const { theme, toggleTheme, connectedUsers } = useAppStore();
+  const { theme, toggleTheme, connectedUsers, followingUserId, setFollowingUserId } = useAppStore();
   const [copied, setCopied] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'export' | 'import'>('export');
   const [mermaidCode, setMermaidCode] = useState('');
   const [importCode, setImportCode] = useState('graph TD\n    A[Web App] --> B(API Gateway)\n    B --> C[(Postgres DB)]');
   const [copiedMermaid, setCopiedMermaid] = useState(false);
-  const [followingUser, setFollowingUser] = useState<string | null>(null);
 
   // Dummy users for demo
   const mockUsers = connectedUsers?.length > 0 ? connectedUsers : [
@@ -132,78 +132,19 @@ export function TopBar({ editor }: TopBarProps) {
     if (!editor || !importCode.trim()) return;
 
     const center = editor.getViewportPageBounds().center;
-    const lines = importCode.split('\n');
+    const { shapes } = parseAndCompileMermaid(importCode, center);
 
-    const nodeMap: Record<string, TLShapeId> = {};
-    const newShapes: Array<Record<string, unknown>> = [];
-    let nodeIndex = 0;
-
-    lines.forEach((line) => {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith('graph')) return;
-
-      const nodeMatches = trimmed.matchAll(/([A-Za-z0-9_]+)(\[|\(|\(\()([^\]\)]+)(\]|\)|\)\))/g);
-      for (const match of nodeMatches) {
-        const [, nodeId, bracket, label] = match;
-        if (!nodeMap[nodeId]) {
-          const shapeId = createShapeId();
-          nodeMap[nodeId] = shapeId;
-
-          const shapeType = bracket === '(' || bracket === '((' ? 'ellipse' : 'rectangle';
-          const posX = center.x - 200 + (nodeIndex * 220);
-          const posY = center.y - 40;
-
-          newShapes.push({
-            id: shapeId,
-            type: 'geo',
-            x: posX,
-            y: posY,
-            props: {
-              geo: shapeType,
-              w: 160,
-              h: 80,
-              color: nodeIndex % 2 === 0 ? 'violet' : 'blue',
-              fill: 'semi',
-              text: label,
-            },
-          });
-          nodeIndex++;
-        }
-      }
-
-      if (trimmed.includes('-->')) {
-        const parts = trimmed.split('-->');
-        if (parts.length >= 2) {
-          const startX = center.x - 40;
-          const startY = center.y;
-          newShapes.push({
-            id: createShapeId(),
-            type: 'arrow',
-            x: startX,
-            y: startY,
-            props: {
-              start: { x: 0, y: 0 },
-              end: { x: 140, y: 0 },
-            },
-          });
-        }
-      }
-    });
-
-    if (newShapes.length > 0) {
-      editor.createShapes(newShapes as unknown as Parameters<typeof editor.createShapes>[0]);
+    if (shapes.length > 0) {
+      editor.createShapes(shapes as unknown as Parameters<typeof editor.createShapes>[0]);
     }
     setShowExportModal(false);
   };
 
   const handleToggleFollowUser = (userId: string) => {
-    if (followingUser === userId) {
-      setFollowingUser(null);
+    if (followingUserId === userId) {
+      setFollowingUserId(null);
     } else {
-      setFollowingUser(userId);
-      if (editor) {
-        editor.zoomToFit();
-      }
+      setFollowingUserId(userId);
     }
   };
 
@@ -236,10 +177,13 @@ export function TopBar({ editor }: TopBarProps) {
             style={{ color: 'var(--text-primary)' }}
           />
 
-          {followingUser && (
-            <div className="px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-500/20 border border-purple-500/40 text-purple-300 flex items-center gap-1.5 animate-pulse">
-              <Eye size={12} /> Following Teammate
-            </div>
+          {followingUserId && (
+            <button 
+              onClick={() => setFollowingUserId(null)}
+              className="px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-500/20 border border-purple-500/40 text-purple-300 flex items-center gap-1.5 animate-pulse hover:bg-purple-500/30 transition-colors"
+            >
+              <Eye size={12} /> Following Teammate (Click to stop)
+            </button>
           )}
         </div>
 
@@ -255,7 +199,7 @@ export function TopBar({ editor }: TopBarProps) {
                 key={user.id}
                 onClick={() => handleToggleFollowUser(user.id)}
                 className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold border-2 transition-transform hover:scale-110 shadow-sm ${
-                  followingUser === user.id ? 'border-yellow-400 ring-2 ring-yellow-400/50' : 'border-white dark:border-gray-900'
+                  followingUserId === user.id ? 'border-yellow-400 ring-2 ring-yellow-400/50 scale-110' : 'border-white dark:border-gray-900'
                 }`}
                 style={{ backgroundColor: user.color || 'var(--accent)' }}
                 title={`Click to follow ${user.name}`}

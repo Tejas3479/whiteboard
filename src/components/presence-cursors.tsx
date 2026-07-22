@@ -4,13 +4,19 @@ import React, { useEffect } from 'react';
 import { useOthers, useUpdateMyPresence } from '@liveblocks/react';
 import { useAppStore } from '@/store/app-store';
 
+import { Editor } from 'tldraw';
+
 interface UserPresence {
   cursor?: { x: number; y: number } | null;
   name?: string;
   color?: string;
 }
 
-export function PresenceCursors() {
+interface PresenceCursorsProps {
+  editor?: Editor | null;
+}
+
+export function PresenceCursors({ editor }: PresenceCursorsProps) {
   const updateMyPresence = useUpdateMyPresence();
   const others = useOthers((othersList) =>
     othersList.map((user) => ({
@@ -18,7 +24,7 @@ export function PresenceCursors() {
       presence: user.presence as unknown as UserPresence,
     }))
   );
-  const currentUser = useAppStore((state) => state.currentUser);
+  const { currentUser, followingUserId } = useAppStore();
 
   useEffect(() => {
     const handlePointerMove = (e: PointerEvent) => {
@@ -41,6 +47,24 @@ export function PresenceCursors() {
       window.removeEventListener('pointerleave', handlePointerLeave);
     };
   }, [updateMyPresence, currentUser]);
+
+  // Live Camera Follow Mode
+  useEffect(() => {
+    if (!editor || !followingUserId) return;
+
+    const followedTarget = others.find(
+      (o) => o.connectionId.toString() === followingUserId || o.presence?.name?.toLowerCase() === followingUserId.toLowerCase()
+    );
+
+    if (followedTarget?.presence?.cursor) {
+      const { x, y } = followedTarget.presence.cursor;
+      try {
+        editor.centerOnPoint({ x, y });
+      } catch {
+        // ignore
+      }
+    }
+  }, [editor, followingUserId, others]);
 
   return (
     <div className="absolute inset-0 pointer-events-none z-40 overflow-hidden">
