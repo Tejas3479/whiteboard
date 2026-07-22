@@ -4,11 +4,13 @@ import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { useParams } from "next/navigation";
 import { useAppStore } from "@/store/app-store";
+import { useContextStore } from "@/store/context-store";
 import { Editor } from "tldraw";
 
 import { TopBar } from "@/components/top-bar";
 import { Toolbar } from "@/components/toolbar";
 import { AiPanel } from "@/components/ai-panel";
+import { ContextPanel } from "@/components/context-panel";
 import { PresenceCursors } from "@/components/presence-cursors";
 import { ZoomControls } from "@/components/zoom-controls";
 import { LiveblocksProvider } from "@/components/liveblocks-provider";
@@ -25,6 +27,7 @@ export default function BoardPage() {
   
   const setCurrentRoom = useAppStore((state) => state.setCurrentRoom);
   const aiPanelOpen = useAppStore((state) => state.aiPanelOpen);
+  const { openContextPanel, isContextPanelOpen } = useContextStore();
   
   const [editor, setEditor] = useState<Editor | null>(null);
 
@@ -38,6 +41,27 @@ export default function BoardPage() {
       });
     }
   }, [id, setCurrentRoom]);
+
+  // Listen to shape selection changes on canvas
+  useEffect(() => {
+    if (!editor) return;
+
+    const unlisten = editor.store.listen(
+      () => {
+        const selectedShapes = Array.from(editor.getSelectedShapes());
+        if (selectedShapes.length > 0 && !isContextPanelOpen) {
+          const first = selectedShapes[0];
+          const label = (first.props as { text?: string })?.text || 'Selected Component';
+          openContextPanel(first.id.toString(), label);
+        }
+      },
+      { scope: 'session', source: 'user' }
+    );
+
+    return () => {
+      unlisten();
+    };
+  }, [editor, isContextPanelOpen, openContextPanel]);
 
   return (
     <LiveblocksProvider roomId={id || "default-room"}>
@@ -58,6 +82,11 @@ export default function BoardPage() {
             {/* Left Toolbar */}
             <div className="pointer-events-auto absolute left-4 top-1/2 -translate-y-1/2">
               <Toolbar editor={editor} />
+            </div>
+
+            {/* Context Layer Panel */}
+            <div className="pointer-events-auto">
+              <ContextPanel />
             </div>
 
             {/* Right AI Panel */}

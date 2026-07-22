@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   MousePointer2, 
   Hand, 
@@ -10,9 +10,13 @@ import {
   ArrowUpRight, 
   Type, 
   Eraser, 
-  Sparkles 
+  Sparkles,
+  Wand2,
+  FileText
 } from 'lucide-react';
 import { useAppStore, Tool } from '@/store/app-store';
+import { useContextStore } from '@/store/context-store';
+import { executeMessCleanup } from '@/lib/auto-layout';
 
 import { Editor } from 'tldraw';
 
@@ -33,6 +37,8 @@ const tools: { id: Tool; icon: React.ElementType; label: string }[] = [
 
 export function Toolbar({ editor }: ToolbarProps) {
   const { activeTool, setActiveTool, aiPanelOpen, toggleAiPanel } = useAppStore();
+  const { isContextPanelOpen, openContextPanel, closeContextPanel } = useContextStore();
+  const [cleanedCount, setCleanedCount] = useState<number | null>(null);
 
   const handleToolSelect = (toolId: Tool) => {
     setActiveTool(toolId);
@@ -61,6 +67,29 @@ export function Toolbar({ editor }: ToolbarProps) {
       case 'eraser':
         editor.setCurrentTool('eraser');
         break;
+    }
+  };
+
+  const handleMessCleanup = () => {
+    if (!editor) return;
+    const count = executeMessCleanup(editor);
+    setCleanedCount(count);
+    setTimeout(() => setCleanedCount(null), 2000);
+  };
+
+  const handleToggleContext = () => {
+    if (isContextPanelOpen) {
+      closeContextPanel();
+    } else {
+      if (!editor) return;
+      const selectedShapes = Array.from(editor.getSelectedShapes());
+      if (selectedShapes.length > 0) {
+        const first = selectedShapes[0];
+        const label = (first.props as { text?: string })?.text || 'Selected Component';
+        openContextPanel(first.id.toString(), label);
+      } else {
+        openContextPanel('global-board-notes', 'Board Main Notes');
+      }
     }
   };
 
@@ -101,6 +130,55 @@ export function Toolbar({ editor }: ToolbarProps) {
         style={{ backgroundColor: 'var(--border)' }} 
       />
 
+      {/* MESS CLEANUP BUTTON */}
+      <button
+        onClick={handleMessCleanup}
+        className="relative group w-10 h-10 flex items-center justify-center rounded-md transition-all duration-300 overflow-hidden bg-gradient-to-tr from-amber-500/20 to-purple-500/20 hover:from-amber-500/40 hover:to-purple-500/40 border border-amber-500/30 text-amber-300"
+        title="Mess Cleanup — Auto-align diagram structure"
+      >
+        <Wand2 size={20} className="text-amber-400" />
+        
+        {/* Tooltip */}
+        <div 
+          className="absolute left-full ml-3 px-2 py-1 text-xs whitespace-nowrap rounded opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 glass font-medium text-amber-300"
+          style={{ 
+            backgroundColor: 'var(--surface-elevated)', 
+            border: '1px solid var(--border)' 
+          }}
+        >
+          {cleanedCount !== null ? `Aligned ${cleanedCount} shapes!` : 'Mess Cleanup (Auto-Align)'}
+        </div>
+      </button>
+
+      {/* CONTEXT LAYER BUTTON */}
+      <button
+        onClick={handleToggleContext}
+        className={`relative group w-10 h-10 flex items-center justify-center rounded-md transition-all duration-300 ${
+          isContextPanelOpen ? 'bg-purple-600 text-white shadow-lg' : 'hover:bg-white/10 text-gray-300'
+        }`}
+        title="Context Layer — Attach Notes, Links, Code & Files"
+      >
+        <FileText size={20} className={isContextPanelOpen ? 'text-white' : 'text-purple-400'} />
+        
+        {/* Tooltip */}
+        <div 
+          className="absolute left-full ml-3 px-2 py-1 text-xs whitespace-nowrap rounded opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 glass"
+          style={{ 
+            backgroundColor: 'var(--surface-elevated)', 
+            color: 'var(--text-primary)',
+            border: '1px solid var(--border)' 
+          }}
+        >
+          Context Layer (Notes/Links/Code)
+        </div>
+      </button>
+
+      <div 
+        className="w-full h-px my-1" 
+        style={{ backgroundColor: 'var(--border)' }} 
+      />
+
+      {/* AI COPILOT BUTTON */}
       <button
         onClick={toggleAiPanel}
         className="relative group w-10 h-10 flex items-center justify-center rounded-md transition-all duration-300 overflow-hidden"
@@ -124,9 +202,10 @@ export function Toolbar({ editor }: ToolbarProps) {
             border: '1px solid var(--border)' 
           }}
         >
-          AI Copilot
+          AI Architecture Assist
         </div>
       </button>
     </div>
   );
 }
+
