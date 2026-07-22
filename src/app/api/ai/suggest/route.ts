@@ -39,6 +39,30 @@ Only output raw JSON lines, no markdown codeblocks or extra text.`,
           await sendChunk({ type: 'node', data: { id: 'auth-1', label: 'Client App', shape: 'rectangle', x: 100, y: 100 } });
           await sendChunk({ type: 'node', data: { id: 'auth-2', label: 'Auth Server', shape: 'rectangle', x: 400, y: 100 } });
           await sendChunk({ type: 'edge', data: { id: 'e-1', label: 'Login Request', source: 'auth-1', target: 'auth-2' } });
+        } else if (type.includes('aws') || type.includes('serverless')) {
+          await sendChunk({ type: 'node', data: { id: 'aws-1', label: 'CloudFront CDN', shape: 'rectangle', x: 100, y: 150 } });
+          await sendChunk({ type: 'node', data: { id: 'aws-2', label: 'API Gateway', shape: 'rectangle', x: 350, y: 150 } });
+          await sendChunk({ type: 'node', data: { id: 'aws-3', label: 'AWS Lambda (Fn)', shape: 'ellipse', x: 600, y: 100 } });
+          await sendChunk({ type: 'node', data: { id: 'aws-4', label: 'DynamoDB Table', shape: 'cylinder', x: 850, y: 150 } });
+          await sendChunk({ type: 'edge', data: { id: 'e-aws-1', label: 'HTTPS', source: 'aws-1', target: 'aws-2' } });
+          await sendChunk({ type: 'edge', data: { id: 'e-aws-2', label: 'Invoke', source: 'aws-2', target: 'aws-3' } });
+          await sendChunk({ type: 'edge', data: { id: 'e-aws-3', label: 'Read/Write', source: 'aws-3', target: 'aws-4' } });
+        } else if (type.includes('k8s') || type.includes('kubernetes')) {
+          await sendChunk({ type: 'node', data: { id: 'k8s-1', label: 'Ingress Controller', shape: 'rectangle', x: 100, y: 200 } });
+          await sendChunk({ type: 'node', data: { id: 'k8s-2', label: 'Frontend Pod', shape: 'rectangle', x: 380, y: 100 } });
+          await sendChunk({ type: 'node', data: { id: 'k8s-3', label: 'Backend Pod', shape: 'rectangle', x: 380, y: 300 } });
+          await sendChunk({ type: 'node', data: { id: 'k8s-4', label: 'StatefulSet DB', shape: 'cylinder', x: 680, y: 200 } });
+          await sendChunk({ type: 'edge', data: { id: 'e-k8s-1', label: 'Traffic', source: 'k8s-1', target: 'k8s-2' } });
+          await sendChunk({ type: 'edge', data: { id: 'e-k8s-2', label: 'gRPC', source: 'k8s-2', target: 'k8s-3' } });
+          await sendChunk({ type: 'edge', data: { id: 'e-k8s-3', label: 'Persist', source: 'k8s-3', target: 'k8s-4' } });
+        } else if (type.includes('kafka') || type.includes('event')) {
+          await sendChunk({ type: 'node', data: { id: 'kaf-1', label: 'Event Producer', shape: 'rectangle', x: 100, y: 200 } });
+          await sendChunk({ type: 'node', data: { id: 'kaf-2', label: 'Kafka Broker / Queue', shape: 'ellipse', x: 400, y: 200 } });
+          await sendChunk({ type: 'node', data: { id: 'kaf-3', label: 'Consumer (Analytics)', shape: 'rectangle', x: 700, y: 100 } });
+          await sendChunk({ type: 'node', data: { id: 'kaf-4', label: 'Consumer (Notification)', shape: 'rectangle', x: 700, y: 300 } });
+          await sendChunk({ type: 'edge', data: { id: 'e-kaf-1', label: 'Publish Event', source: 'kaf-1', target: 'kaf-2' } });
+          await sendChunk({ type: 'edge', data: { id: 'e-kaf-2', label: 'Subscribe', source: 'kaf-2', target: 'kaf-3' } });
+          await sendChunk({ type: 'edge', data: { id: 'e-kaf-3', label: 'Subscribe', source: 'kaf-2', target: 'kaf-4' } });
         } else if (type.includes('api') || type.includes('microservice')) {
           await sendChunk({ type: 'node', data: { id: 'api-1', label: 'API Gateway', shape: 'rectangle', x: 200, y: 100 } });
           await sendChunk({ type: 'node', data: { id: 'api-2', label: 'User Service', shape: 'rectangle', x: 100, y: 300 } });

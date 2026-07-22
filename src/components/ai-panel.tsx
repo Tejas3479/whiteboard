@@ -43,7 +43,7 @@ export function AiPanel({ editor }: AiPanelProps) {
   } = useAppStore();
 
   const quickSuggestions = [
-    "Auth Flow", "API Architecture", "Database Schema", "Microservices"
+    "Auth Flow", "API Architecture", "Database Schema", "AWS Serverless", "Kubernetes Cluster", "Kafka Event Pipeline"
   ];
 
   const handleAcceptSuggestion = useCallback((sugg: AISuggestion) => {
