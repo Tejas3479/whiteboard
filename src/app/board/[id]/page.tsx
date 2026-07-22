@@ -15,6 +15,7 @@ import { PresenceCursors } from "@/components/presence-cursors";
 import { ZoomControls } from "@/components/zoom-controls";
 import { LiveblocksProvider } from "@/components/liveblocks-provider";
 import { TimeTravelReplay } from "@/components/time-travel-replay";
+import { ContextBadges } from "@/components/context-badges";
 
 const CanvasWrapper = dynamic(() => import("@/components/canvas-wrapper"), { 
   ssr: false,
@@ -110,6 +111,9 @@ export default function BoardPage() {
               <ZoomControls editor={editor} />
             </div>
           </div>
+
+          {/* Context Badges Layer */}
+          <ContextBadges editor={editor} />
 
           {/* Presence Layer */}
           <PresenceCursors editor={editor} />
