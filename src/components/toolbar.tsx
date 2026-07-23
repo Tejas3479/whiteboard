@@ -95,21 +95,21 @@ export function Toolbar({ editor }: ToolbarProps) {
 
   return (
     <div 
-      className="fixed left-4 top-1/2 -translate-y-1/2 flex flex-col gap-2 p-2 glass z-50 animate-slide-up"
+      className="fixed left-2 md:left-4 top-1/2 -translate-y-1/2 flex flex-row md:flex-col gap-1 md:gap-2 p-1 md:p-2 glass z-50 animate-slide-up max-h-[80vh] overflow-x-auto md:overflow-y-auto"
       style={{ borderRadius: 'var(--radius-lg)' }}
     >
       {tools.map((tool) => (
         <button
           key={tool.id}
           onClick={() => handleToolSelect(tool.id)}
-          className="relative group w-10 h-10 flex items-center justify-center rounded-md transition-all duration-200"
+          className="relative group w-8 h-8 md:w-10 md:h-10 flex items-center justify-center rounded-md transition-all duration-200 flex-shrink-0"
           style={{
             backgroundColor: activeTool === tool.id ? 'var(--accent-alpha)' : 'transparent',
             color: activeTool === tool.id ? 'var(--accent)' : 'var(--text-secondary)',
             boxShadow: activeTool === tool.id ? '0 0 10px var(--accent-alpha)' : 'none',
           }}
         >
-          <tool.icon size={20} />
+          <tool.icon size={16} className="md:w-5 md:h-5" />
           
           {/* Tooltip */}
           <div 

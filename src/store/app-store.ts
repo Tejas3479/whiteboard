@@ -77,6 +77,12 @@ interface AppState {
   setGhostShapeIds: (ids: string[]) => void;
   addGhostShapeId: (id: string) => void;
   clearGhostShapeIds: () => void;
+
+  // Undo/Redo
+  canUndo: boolean;
+  canRedo: boolean;
+  setCanUndo: (can: boolean) => void;
+  setCanRedo: (can: boolean) => void;
 }
 
 const COLORS = ['#f472b6', '#34d399', '#fbbf24', '#60a5fa', '#a78bfa'];
@@ -162,4 +168,10 @@ export const useAppStore = create<AppState>((set) => ({
   setGhostShapeIds: (ids) => set({ ghostShapeIds: ids }),
   addGhostShapeId: (id) => set((state) => ({ ghostShapeIds: [...state.ghostShapeIds, id] })),
   clearGhostShapeIds: () => set({ ghostShapeIds: [] }),
+
+  // Undo/Redo
+  canUndo: false,
+  canRedo: false,
+  setCanUndo: (can) => set({ canUndo: can }),
+  setCanRedo: (can) => set({ canRedo: can }),
 }));

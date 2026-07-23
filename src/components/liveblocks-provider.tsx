@@ -6,6 +6,7 @@ import {
   RoomProvider,
   ClientSideSuspense,
 } from '@liveblocks/react';
+import { LoadingSpinner } from './loading-spinner';
 
 interface LiveblocksProviderProps {
   roomId: string;
@@ -21,8 +22,7 @@ export function LiveblocksProvider({ roomId, children }: LiveblocksProviderProps
         <ClientSideSuspense fallback={
           <div className="w-full h-full flex items-center justify-center bg-[var(--background)] text-[var(--foreground)]">
             <div className="flex flex-col items-center gap-3">
-              <div className="loading-spinner" />
-              <span className="text-sm font-medium">Connecting to room...</span>
+              <LoadingSpinner size="lg" text="Connecting to room..." />
             </div>
           </div>
         }>

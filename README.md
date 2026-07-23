@@ -3,6 +3,11 @@
 > **Think Together. Draw Smarter.**
 > Production-grade, real-time collaborative architecture whiteboard powered by AI diagram intelligence, Mess Cleanup auto-align layout engine, Deep Architecture Assist, Executable Context Layer, Liveblocks multiplayer presence, tldraw canvas engine, and Supabase persistent storage.
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Next.js](https://img.shields.io/badge/Next.js-16.2-black)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19.2-blue)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org/)
+
 ---
 
 ## 🌟 Key Features
@@ -53,7 +58,7 @@
 
 ---
 
-## 🏗️ Architecture & Tech Stack
+## 🏗️ Tech Stack
 
 | Layer | Technology | Purpose |
 | :--- | :--- | :--- |
@@ -66,6 +71,134 @@
 | **Persistence** | [Supabase Postgres](https://supabase.com/) | Room metadata & canvas snapshot storage |
 | **AI Stream Engine** | [Vercel AI SDK](https://sdk.vercel.ai/) & OpenAI | Streaming NDJSON diagram generation & Architecture Assist |
 | **Styling** | Vanilla CSS Tokens & TailwindCSS v4 | Modern glassmorphism UI & responsive layouts |
+
+---
+
+## 🎯 Key Technical Highlights
+
+### 1. **Type-Safe Architecture**
+- Comprehensive TypeScript interfaces for all shape types
+- Proper type guards instead of unsafe type assertions
+- Strict type checking across all components
+
+### 2. **Error Resilience**
+- React Error Boundaries for graceful error handling
+- Fallback loading states and error messages
+- Graceful degradation when external services are unavailable
+
+### 3. **Performance Optimized**
+- Dynamic imports for code splitting
+- Optimized rendering with React.memo where appropriate
+- Efficient state management with Zustand
+
+### 4. **Responsive Design**
+- Mobile-first approach with breakpoints
+- Touch-friendly interface adaptations
+- Adaptive layouts for different screen sizes
+
+---
+
+## 📁 Project Structure
+
+```
+whiteboard/
+├── src/
+│   ├── app/                    # Next.js App Router
+│   │   ├── api/               # API routes
+│   │   │   ├── ai/           # AI endpoints
+│   │   │   ├── export/       # Export functionality
+│   │   │   └── rooms/        # Room management
+│   │   ├── board/[id]/       # Board page
+│   │   ├── layout.tsx        # Root layout
+│   │   ├── page.tsx          # Landing page
+│   │   └── globals.css       # Global styles
+│   ├── components/           # React components
+│   │   ├── ai-panel.tsx      # AI assistant panel
+│   │   ├── canvas-wrapper.tsx # tldraw wrapper
+│   │   ├── context-panel.tsx  # Context layer panel
+│   │   ├── error-boundary.tsx # Error handling
+│   │   ├── liveblocks-provider.tsx # Multiplayer
+│   │   ├── presence-cursors.tsx # User cursors
+│   │   ├── time-travel-replay.tsx # History replay
+│   │   ├── toolbar.tsx       # Drawing tools
+│   │   └── top-bar.tsx       # Top navigation
+│   ├── lib/                  # Utility libraries
+│   │   ├── auto-layout.ts    # DAG layout algorithm
+│   │   ├── mermaid-compiler.ts # Mermaid parser
+│   │   └── supabase.ts       # Database client
+│   └── store/                # State management
+│       ├── app-store.ts      # Global app state
+│       └── context-store.ts  # Context layer state
+├── supabase/
+│   └── schema.sql            # Database schema
+├── public/                   # Static assets
+└── package.json             # Dependencies
+```
+
+---
+
+## 🛠️ Development
+
+### Available Scripts
+
+```bash
+npm run dev      # Start development server
+npm run build    # Build for production
+npm run start    # Start production server
+npm run lint     # Run ESLint
+```
+
+### Database Setup
+
+For Supabase persistence, run the SQL migration script:
+
+```bash
+# Apply the schema to your Supabase project
+# Copy contents of supabase/schema.sql to your Supabase SQL editor
+```
+
+---
+
+## 📚 Documentation
+
+- [📁 Technical Architecture Guide (`ARCHITECTURE.md`)](./ARCHITECTURE.md) - Deep dive into system design
+- [📁 REST API Reference (`API.md`)](./API.md) - Complete API documentation
+- [📁 Contributing Guidelines (`CONTRIBUTING.md`)](./CONTRIBUTING.md) - How to contribute
+
+---
+
+## 🎨 Features Showcase
+
+### 🧹 Mess Cleanup (Auto-Align)
+- Automatic graph topology analysis
+- Hierarchical DAG layering algorithm
+- Smooth 350ms animated transitions
+- Intelligent arrow routing
+
+### 🤖 AI Architecture Assist
+- Deep canvas analysis
+- Intelligent component suggestions
+- One-click canvas insertion
+- Fallback to built-in patterns
+
+### 📎 Executable Context Layer
+- Per-element metadata attachment
+- Rich text notes with auto-save
+- Reference links management
+- Code snippets with syntax highlighting
+- File attachments support
+
+### 👥 Real-time Collaboration
+- Live cursor presence
+- Follow mode for presentations
+- Multi-user editing
+- Conflict resolution
+
+### ⏳ Time-Travel Replay
+- Step-by-step diagram history
+- Interactive playback controls
+- Live state restoration
+- History scrubbing
 
 ---
 
@@ -143,6 +276,7 @@ CREATE POLICY "Anyone can update room snapshots" ON rooms FOR UPDATE USING (true
 | **`Context Layer` Icon / Badge** | Open element context panel to edit Notes, Links, Code, & Files |
 | **Click Canvas Shape Badge** | Directly open attached Context Layer for selected element |
 | **Tab** | Instantly commit top AI suggestion / ghost shape on canvas |
+| **Ctrl+Z / Ctrl+Shift+Z** | Undo / Redo canvas actions |
 | **Click Teammate Avatar** | Toggle continuous camera **Follow Mode** |
 | **Time-Travel Button** | Toggle step-by-step diagram history replay slider |
 

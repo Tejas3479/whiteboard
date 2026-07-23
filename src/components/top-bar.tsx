@@ -155,25 +155,25 @@ export function TopBar({ editor }: TopBarProps) {
         style={{ borderBottom: '1px solid var(--border)' }}
       >
         {/* LEFT: Logo & Room Name */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 md:gap-4">
           <Link href="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
             <div className="w-8 h-8 rounded bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white shadow-md">
               <Sparkles size={16} />
             </div>
-            <span className="font-bold text-lg bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-blue-500">
+            <span className="font-bold text-lg bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-blue-500 hidden sm:block">
               SynapseBoard
             </span>
           </Link>
           
           <div 
-            className="h-4 w-px" 
+            className="h-4 w-px hidden md:block" 
             style={{ backgroundColor: 'var(--border)' }} 
           />
           
           <input 
             type="text" 
             defaultValue="Architecture Whiteboard"
-            className="bg-transparent border-none outline-none font-medium hover:bg-black/5 dark:hover:bg-white/5 px-2 py-1 rounded transition-colors"
+            className="bg-transparent border-none outline-none font-medium hover:bg-black/5 dark:hover:bg-white/5 px-2 py-1 rounded transition-colors text-sm md:text-base hidden md:block"
             style={{ color: 'var(--text-primary)' }}
           />
 

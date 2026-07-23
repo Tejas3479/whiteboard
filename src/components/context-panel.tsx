@@ -104,7 +104,7 @@ export function ContextPanel() {
 
   return (
     <div 
-      className="fixed left-20 top-20 bottom-24 w-[400px] glass z-50 rounded-2xl border shadow-2xl flex flex-col overflow-hidden animate-fade-in-scale"
+      className="fixed left-4 top-16 bottom-20 w-[calc(100vw-2rem)] max-w-md glass z-50 rounded-2xl border shadow-2xl flex flex-col overflow-hidden animate-fade-in-scale md:left-20 md:top-20 md:bottom-24 md:w-[400px]"
       style={{ borderColor: 'var(--border)' }}
     >
       {/* Panel Header */}

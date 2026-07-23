@@ -244,21 +244,23 @@ export function AiPanel({ editor }: AiPanelProps) {
     setIsAnalyzing(true);
     setRecommendations([]);
 
-    const pageShapes = Array.from(editor.getCurrentPageShapes());
-    const shapesData = pageShapes.map((s) => ({
-      id: s.id,
-      type: s.type,
-      props: s.props,
-    }));
-
     try {
+      const pageShapes = Array.from(editor.getCurrentPageShapes());
+      const shapesData = pageShapes.map((s) => ({
+        id: s.id,
+        type: s.type,
+        props: s.props,
+      }));
+
       const response = await fetch('/api/ai/architecture-assist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ shapes: shapesData }),
       });
 
-      if (!response.ok || !response.body) throw new Error('Architecture assist error');
+      if (!response.ok || !response.body) {
+        throw new Error(`Architecture assist failed: ${response.statusText}`);
+      }
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
@@ -338,7 +340,9 @@ export function AiPanel({ editor }: AiPanelProps) {
         body: JSON.stringify({ prompt: currentPrompt }),
       });
 
-      if (!response.ok || !response.body) throw new Error('Streaming failed');
+      if (!response.ok || !response.body) {
+        throw new Error(`AI suggestion failed: ${response.statusText}`);
+      }
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
@@ -378,6 +382,13 @@ export function AiPanel({ editor }: AiPanelProps) {
       });
     } catch (err) {
       console.error('AI streaming error:', err);
+      // Add error suggestion to inform user
+      addAiSuggestion({
+        id: Date.now().toString(),
+        title: 'AI Error',
+        description: err instanceof Error ? err.message : 'Failed to generate AI suggestions. Please try again.',
+        status: 'rejected',
+      });
     } finally {
       setIsAiThinking(false);
     }

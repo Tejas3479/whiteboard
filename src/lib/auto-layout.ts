@@ -97,8 +97,8 @@ export function extractGraphFromEditor(editor: Editor): GraphTopology {
       if (sourceId && targetId && sourceId !== targetId && nodes.has(sourceId) && nodes.has(targetId)) {
         edges.push({
           id: s.id,
-          source: sourceId as unknown as TLShapeId,
-          target: targetId as unknown as TLShapeId,
+          source: sourceId as TLShapeId,
+          target: targetId as TLShapeId,
           label: props?.text || '',
         });
 
