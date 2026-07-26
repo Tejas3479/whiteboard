@@ -156,11 +156,11 @@ export function TopBar({ editor }: TopBarProps) {
       >
         {/* LEFT: Logo & Room Name */}
         <div className="flex items-center gap-2 md:gap-4">
-          <Link href="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
-            <div className="w-8 h-8 rounded bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white shadow-md">
-              <Sparkles size={16} />
+          <Link href="/" className="flex items-center gap-2.5 hover:opacity-90 transition-opacity">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500 via-indigo-500 to-blue-500 flex items-center justify-center text-white shadow-[0_0_20px_rgba(168,85,247,0.4)] border border-purple-400/30">
+              <Sparkles size={18} className="animate-pulse" />
             </div>
-            <span className="font-bold text-lg bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-blue-500 hidden sm:block">
+            <span className="font-extrabold text-lg bg-clip-text text-transparent bg-gradient-to-r from-white via-purple-100 to-indigo-300 hidden sm:block tracking-tight">
               SynapseBoard
             </span>
           </Link>
@@ -173,16 +173,15 @@ export function TopBar({ editor }: TopBarProps) {
           <input 
             type="text" 
             defaultValue="Architecture Whiteboard"
-            className="bg-transparent border-none outline-none font-medium hover:bg-black/5 dark:hover:bg-white/5 px-2 py-1 rounded transition-colors text-sm md:text-base hidden md:block"
-            style={{ color: 'var(--text-primary)' }}
+            className="bg-transparent border-none outline-none font-semibold hover:bg-white/5 px-2.5 py-1 rounded-lg transition-colors text-sm md:text-base hidden md:block text-gray-200 focus:text-white"
           />
 
           {followingUserId && (
             <button 
               onClick={() => setFollowingUserId(null)}
-              className="px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-500/20 border border-purple-500/40 text-purple-300 flex items-center gap-1.5 animate-pulse hover:bg-purple-500/30 transition-colors"
+              className="px-3 py-1 rounded-full text-xs font-semibold bg-purple-500/20 border border-purple-500/40 text-purple-300 flex items-center gap-1.5 animate-pulse hover:bg-purple-500/30 transition-colors shadow-sm"
             >
-              <Eye size={12} /> Following Teammate (Click to stop)
+              <Eye size={13} /> Following Teammate (Click to stop)
             </button>
           )}
         </div>
