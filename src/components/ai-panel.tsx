@@ -5,6 +5,8 @@ import { X, Sparkles, SendHorizontal, Check, X as XIcon, Eye, ShieldAlert, Cpu, 
 import { useAppStore, AISuggestion } from '@/store/app-store';
 import { Editor, createShapeId, TLShapeId } from 'tldraw';
 import { ArchitectureRecommendation } from '@/app/api/ai/architecture-assist/route';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useUiSounds } from '@/lib/use-ui-sounds';
 
 interface AiPanelProps {
   editor?: Editor | null;
@@ -52,8 +54,10 @@ export function AiPanel({ editor }: AiPanelProps) {
   ];
 
   const { ghostShapeIds, setGhostShapeIds, clearGhostShapeIds } = useAppStore();
+  const { playClick, playHover, playSuccess } = useUiSounds();
 
   const handlePreviewGhostShapes = useCallback((sugg: AISuggestion) => {
+    playClick();
     if (!editor) return;
     const center = editor.getViewportPageBounds().center;
     let parsedData: ParsedSuggestionData = {};
@@ -129,6 +133,7 @@ export function AiPanel({ editor }: AiPanelProps) {
   }, [editor, setGhostShapeIds]);
 
   const handleAcceptSuggestion = useCallback((sugg: AISuggestion) => {
+    playSuccess();
     if (editor) {
       if (ghostShapeIds.length > 0) {
         try {
@@ -214,6 +219,7 @@ export function AiPanel({ editor }: AiPanelProps) {
   }, [editor, ghostShapeIds, clearGhostShapeIds, removeAiSuggestion]);
 
   const handleRejectSuggestion = (suggId: string) => {
+    playClick();
     if (editor && ghostShapeIds.length > 0) {
       try {
         editor.deleteShapes(ghostShapeIds as unknown as Parameters<typeof editor.deleteShapes>[0]);
@@ -241,6 +247,7 @@ export function AiPanel({ editor }: AiPanelProps) {
   // Run Architecture Assist Analysis on Canvas Shapes
   const handleRunArchitectureAssist = async () => {
     if (!editor || isAnalyzing) return;
+    playClick();
     setIsAnalyzing(true);
     setRecommendations([]);
 
@@ -288,6 +295,7 @@ export function AiPanel({ editor }: AiPanelProps) {
           }
         }
       }
+      if (recs.length > 0) playSuccess();
     } catch (err) {
       console.error('Failed to run architecture assist:', err);
     } finally {
@@ -297,6 +305,7 @@ export function AiPanel({ editor }: AiPanelProps) {
 
   // Add suggested component node directly to canvas with smart positioning
   const handleAddSuggestedNode = (node: { label: string; shape: 'rectangle' | 'ellipse' | 'cylinder' }) => {
+    playSuccess();
     if (!editor) return;
     const center = editor.getViewportPageBounds().center;
     const existingCount = Array.from(editor.getCurrentPageShapes()).length;
@@ -329,6 +338,7 @@ export function AiPanel({ editor }: AiPanelProps) {
     e.preventDefault();
     if (!aiPrompt.trim() || isAiThinking) return;
 
+    playClick();
     setIsAiThinking(true);
     const currentPrompt = aiPrompt;
     setAiPrompt('');
@@ -391,16 +401,21 @@ export function AiPanel({ editor }: AiPanelProps) {
       });
     } finally {
       setIsAiThinking(false);
+      playSuccess();
     }
   };
 
-  if (!aiPanelOpen) return null;
-
   return (
-    <div 
-      className="fixed right-0 top-14 bottom-0 w-[380px] glass z-40 flex flex-col border-l shadow-2xl animate-slide-left"
-      style={{ borderColor: 'var(--border)' }}
-    >
+    <AnimatePresence>
+      {aiPanelOpen && (
+        <motion.div 
+          initial={{ x: "100%", opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          exit={{ x: "100%", opacity: 0 }}
+          transition={{ type: "spring", damping: 25, stiffness: 250 }}
+          className="fixed right-0 top-14 bottom-0 w-[380px] glass z-40 flex flex-col border-l shadow-2xl"
+          style={{ borderColor: 'var(--border)' }}
+        >
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: 'var(--border)' }}>
         <div className="flex items-center gap-2">
@@ -423,7 +438,8 @@ export function AiPanel({ editor }: AiPanelProps) {
       {/* Tabs Switcher */}
       <div className="flex items-center gap-1 p-2 border-b" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)' }}>
         <button
-          onClick={() => setActiveTab('assist')}
+          onClick={() => { playClick(); setActiveTab('assist'); }}
+          onMouseEnter={playHover}
           className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
             activeTab === 'assist' ? 'bg-purple-600 text-white shadow' : 'text-gray-400 hover:text-white'
           }`}
@@ -432,7 +448,8 @@ export function AiPanel({ editor }: AiPanelProps) {
         </button>
 
         <button
-          onClick={() => setActiveTab('prompt')}
+          onClick={() => { playClick(); setActiveTab('prompt'); }}
+          onMouseEnter={playHover}
           className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
             activeTab === 'prompt' ? 'bg-purple-600 text-white shadow' : 'text-gray-400 hover:text-white'
           }`}
@@ -455,6 +472,7 @@ export function AiPanel({ editor }: AiPanelProps) {
               </p>
               <button
                 onClick={handleRunArchitectureAssist}
+                onMouseEnter={playHover}
                 disabled={isAnalyzing}
                 className="mt-1 w-full py-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-blue-500 text-white text-xs font-bold shadow-md hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2 transition-all"
               >
@@ -479,6 +497,21 @@ export function AiPanel({ editor }: AiPanelProps) {
                 </div>
               )}
 
+              {isAnalyzing && recommendations.length === 0 && (
+                <div className="flex flex-col gap-3">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="p-3.5 rounded-xl border bg-black/30 flex flex-col gap-3" style={{ borderColor: 'var(--border)' }}>
+                      <div className="flex items-center justify-between">
+                        <div className="h-3 w-16 bg-white/10 rounded animate-pulse" />
+                        <div className="h-3 w-20 bg-white/10 rounded animate-pulse" />
+                      </div>
+                      <div className="h-4 w-3/4 bg-white/10 rounded animate-pulse" />
+                      <div className="h-10 w-full bg-white/10 rounded animate-pulse" />
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {recommendations.map((rec) => (
                 <div
                   key={rec.id}
@@ -497,11 +530,20 @@ export function AiPanel({ editor }: AiPanelProps) {
                   </div>
 
                   <h4 className="font-bold text-xs text-white">{rec.title}</h4>
-                  <p className="text-[11px] text-gray-300 leading-relaxed">{rec.description}</p>
+                  <p className="text-[11px] text-gray-300 leading-relaxed overflow-hidden">
+                    <motion.span
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.5 }}
+                    >
+                      {rec.description}
+                    </motion.span>
+                  </p>
 
                   {rec.suggestedNode && (
                     <button
                       onClick={() => handleAddSuggestedNode(rec.suggestedNode!)}
+                      onMouseEnter={playHover}
                       className="mt-1 py-1.5 px-3 rounded-lg bg-white/10 hover:bg-white/20 border border-white/15 text-xs font-semibold text-purple-300 flex items-center justify-center gap-1.5 transition-all"
                     >
                       <Plus size={14} /> Add {rec.suggestedNode.label} to Canvas
@@ -521,7 +563,8 @@ export function AiPanel({ editor }: AiPanelProps) {
                 {quickSuggestions.map((sugg, i) => (
                   <button
                     key={i}
-                    onClick={() => setAiPrompt(sugg)}
+                    onClick={() => { playClick(); setAiPrompt(sugg); }}
+                    onMouseEnter={playHover}
                     className="px-3 py-1.5 rounded-full text-xs border hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
                     style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
                   >
@@ -546,6 +589,7 @@ export function AiPanel({ editor }: AiPanelProps) {
                 <div className="flex items-center gap-2 mt-2">
                   <button 
                     onClick={() => handleAcceptSuggestion(sugg)}
+                    onMouseEnter={playHover}
                     className="flex-1 py-1.5 flex items-center justify-center gap-1 rounded bg-gradient-to-r from-purple-500 to-blue-500 text-white text-xs font-medium hover:opacity-90 transition-opacity"
                   >
                     <Check size={14} /> Accept
@@ -594,6 +638,8 @@ export function AiPanel({ editor }: AiPanelProps) {
           </form>
         </div>
       )}
-    </div>
+    </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

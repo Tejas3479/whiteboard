@@ -6,6 +6,7 @@ import { Sparkles, Link as LinkIcon, Sun, Moon, Download, Check, FileCode, Uploa
 import { useAppStore } from '@/store/app-store';
 import { Editor, createShapeId, TLShapeId } from 'tldraw';
 import { parseAndCompileMermaid } from '@/lib/mermaid-compiler';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface TopBarProps {
   editor?: Editor | null;
@@ -150,7 +151,10 @@ export function TopBar({ editor }: TopBarProps) {
 
   return (
     <>
-      <div 
+      <motion.div 
+        initial={{ y: -100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
         className="fixed top-0 left-0 w-full h-14 flex items-center justify-between px-4 glass z-50"
         style={{ borderBottom: '1px solid var(--border)' }}
       >
@@ -197,11 +201,12 @@ export function TopBar({ editor }: TopBarProps) {
               <button 
                 key={user.id}
                 onClick={() => handleToggleFollowUser(user.id)}
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold border-2 transition-transform hover:scale-110 shadow-sm ${
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold border-2 transition-transform hover:scale-110 shadow-sm tooltip focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
                   followingUserId === user.id ? 'border-yellow-400 ring-2 ring-yellow-400/50 scale-110' : 'border-white dark:border-gray-900'
                 }`}
                 style={{ backgroundColor: user.color || 'var(--accent)' }}
-                title={`Click to follow ${user.name}`}
+                aria-label={`Click to follow ${user.name}`}
+                data-tooltip={`Click to follow ${user.name}`}
               >
                 {user.name.charAt(0).toUpperCase()}
               </button>
@@ -243,21 +248,32 @@ export function TopBar({ editor }: TopBarProps) {
           {/* Theme Toggle */}
           <button 
             onClick={toggleTheme}
-            className="p-2 rounded-md hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-gray-500 hover:text-gray-900 dark:hover:text-white"
-            title="Toggle theme"
+            aria-label="Toggle theme"
+            data-tooltip="Toggle theme"
+            className="tooltip p-2 rounded-md hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-gray-500 hover:text-gray-900 dark:hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             {theme === 'dark' ? <Moon size={18} /> : <Sun size={18} />}
           </button>
         </div>
-      </div>
+      </motion.div>
 
       {/* Export & Import Modal */}
-      {showExportModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in px-4">
-          <div 
-            className="w-full max-w-xl p-6 glass rounded-2xl border shadow-2xl flex flex-col gap-4 animate-fade-in-scale"
-            style={{ borderColor: 'var(--border)' }}
+      <AnimatePresence>
+        {showExportModal && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
           >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="w-full max-w-xl p-6 glass rounded-2xl border shadow-2xl flex flex-col gap-4"
+              style={{ borderColor: 'var(--border)' }}
+            >
             <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--border)' }}>
               <div className="flex items-center gap-2">
                 <FileCode size={20} className="text-purple-400" />
@@ -362,9 +378,10 @@ export function TopBar({ editor }: TopBarProps) {
                 </div>
               </div>
             )}
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
+      </AnimatePresence>
     </>
   );
 }

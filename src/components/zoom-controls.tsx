@@ -53,7 +53,9 @@ export function ZoomControls({ editor }: ZoomControlsProps) {
     >
       <button 
         onClick={handleZoomOut}
-        className="p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-gray-500 hover:text-gray-900 dark:hover:text-white"
+        aria-label="Zoom out"
+        data-tooltip="Zoom out"
+        className="tooltip p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-gray-500 hover:text-gray-900 dark:hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
         <Minus size={16} />
       </button>
@@ -67,7 +69,9 @@ export function ZoomControls({ editor }: ZoomControlsProps) {
       
       <button 
         onClick={handleZoomIn}
-        className="p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-gray-500 hover:text-gray-900 dark:hover:text-white"
+        aria-label="Zoom in"
+        data-tooltip="Zoom in"
+        className="tooltip p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-gray-500 hover:text-gray-900 dark:hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
         <Plus size={16} />
       </button>
@@ -79,8 +83,9 @@ export function ZoomControls({ editor }: ZoomControlsProps) {
       
       <button 
         onClick={handleZoomFit}
-        className="p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-gray-500 hover:text-gray-900 dark:hover:text-white"
-        title="Fit to screen"
+        aria-label="Fit to screen"
+        data-tooltip="Fit to screen"
+        className="tooltip p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-gray-500 hover:text-gray-900 dark:hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
         <Maximize2 size={16} />
       </button>

@@ -68,8 +68,9 @@ export function UndoRedo({ editor }: UndoRedoProps) {
       <button 
         onClick={handleUndo}
         disabled={!canUndo}
-        className="p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-gray-500 hover:text-gray-900 dark:hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
-        title="Undo (Ctrl+Z)"
+        aria-label="Undo"
+        data-tooltip="Undo (Ctrl+Z)"
+        className="tooltip p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-gray-500 hover:text-gray-900 dark:hover:text-white disabled:opacity-30 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
         <Undo size={16} />
       </button>
@@ -82,8 +83,9 @@ export function UndoRedo({ editor }: UndoRedoProps) {
       <button 
         onClick={handleRedo}
         disabled={!canRedo}
-        className="p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-gray-500 hover:text-gray-900 dark:hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
-        title="Redo (Ctrl+Shift+Z)"
+        aria-label="Redo"
+        data-tooltip="Redo (Ctrl+Shift+Z)"
+        className="tooltip p-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors text-gray-500 hover:text-gray-900 dark:hover:text-white disabled:opacity-30 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
         <Redo size={16} />
       </button>

@@ -14,6 +14,7 @@ import {
   Check
 } from 'lucide-react';
 import { useContextStore } from '@/store/context-store';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export function ContextPanel() {
   const { 
@@ -42,9 +43,7 @@ export function ContextPanel() {
 
   const [savedNotesNotice, setSavedNotesNotice] = useState(false);
 
-  if (!isContextPanelOpen || !activeShapeId) return null;
-
-  const currentCtx = getShapeContext(activeShapeId);
+  const currentCtx = getShapeContext(activeShapeId || '');
 
   const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     updateNotes(activeShapeId, e.target.value);
@@ -103,10 +102,18 @@ export function ContextPanel() {
   };
 
   return (
-    <div 
-      className="fixed left-4 top-16 bottom-20 w-[calc(100vw-2rem)] max-w-md glass z-50 rounded-2xl border shadow-2xl flex flex-col overflow-hidden animate-fade-in-scale md:left-20 md:top-20 md:bottom-24 md:w-[400px]"
-      style={{ borderColor: 'var(--border)' }}
-    >
+    <AnimatePresence>
+      {isContextPanelOpen && activeShapeId && (
+        <motion.div 
+          initial={{ x: -100, opacity: 0, scale: 0.95 }}
+          animate={{ x: 0, opacity: 1, scale: 1 }}
+          exit={{ x: -100, opacity: 0, scale: 0.95 }}
+          transition={{ type: "spring", damping: 25, stiffness: 250 }}
+          role="dialog"
+          aria-label="Context Layer"
+          className="fixed left-4 top-16 bottom-20 w-[calc(100vw-2rem)] max-w-md glass z-50 rounded-2xl border shadow-2xl flex flex-col overflow-hidden md:left-20 md:top-20 md:bottom-24 md:w-[400px]"
+          style={{ borderColor: 'var(--border)' }}
+        >
       {/* Panel Header */}
       <div className="p-4 border-b flex items-center justify-between" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface-elevated)' }}>
         <div className="flex items-center gap-2 overflow-hidden">
@@ -130,8 +137,15 @@ export function ContextPanel() {
       </div>
 
       {/* Tabs Switcher */}
-      <div className="flex items-center gap-1 p-2 border-b" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)' }}>
+      <div 
+        role="tablist" 
+        aria-label="Context Tabs"
+        className="flex items-center gap-1 p-2 border-b" 
+        style={{ borderColor: 'var(--border)', backgroundColor: 'var(--surface)' }}
+      >
         <button
+          role="tab"
+          aria-selected={activeTab === 'notes'}
           onClick={() => setActiveTab('notes')}
           className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-all ${
             activeTab === 'notes' ? 'bg-purple-600 text-white shadow' : 'text-gray-400 hover:text-white'
@@ -141,6 +155,8 @@ export function ContextPanel() {
         </button>
 
         <button
+          role="tab"
+          aria-selected={activeTab === 'links'}
           onClick={() => setActiveTab('links')}
           className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-all relative ${
             activeTab === 'links' ? 'bg-purple-600 text-white shadow' : 'text-gray-400 hover:text-white'
@@ -150,6 +166,8 @@ export function ContextPanel() {
         </button>
 
         <button
+          role="tab"
+          aria-selected={activeTab === 'code'}
           onClick={() => setActiveTab('code')}
           className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-all ${
             activeTab === 'code' ? 'bg-purple-600 text-white shadow' : 'text-gray-400 hover:text-white'
@@ -159,6 +177,8 @@ export function ContextPanel() {
         </button>
 
         <button
+          role="tab"
+          aria-selected={activeTab === 'files'}
           onClick={() => setActiveTab('files')}
           className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-all ${
             activeTab === 'files' ? 'bg-purple-600 text-white shadow' : 'text-gray-400 hover:text-white'
@@ -168,11 +188,23 @@ export function ContextPanel() {
         </button>
       </div>
 
+      </div>
+
       {/* Tab Body */}
       <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
-        {/* TAB 1: NOTES */}
-        {activeTab === 'notes' && (
-          <div className="flex flex-col h-full gap-2">
+        <AnimatePresence mode="wait">
+          {/* TAB 1: NOTES */}
+          {activeTab === 'notes' && (
+            <motion.div 
+              key="notes"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              role="tabpanel"
+              aria-label="Notes Tab"
+              className="flex flex-col h-full gap-2"
+            >
             <div className="flex items-center justify-between">
               <label className="text-xs font-semibold text-gray-300">Executable Architecture Notes</label>
               {savedNotesNotice && (
@@ -187,12 +219,21 @@ export function ContextPanel() {
               placeholder="Add architectural notes, API contracts, deployment instructions, schema details..."
               className="w-full flex-1 min-h-[220px] p-3 rounded-xl bg-black/30 border border-white/10 text-white text-xs font-mono outline-none focus:border-purple-500 transition-colors resize-none leading-relaxed"
             />
-          </div>
-        )}
+            </motion.div>
+          )}
 
-        {/* TAB 2: LINKS */}
-        {activeTab === 'links' && (
-          <div className="flex flex-col gap-4">
+          {/* TAB 2: LINKS */}
+          {activeTab === 'links' && (
+            <motion.div 
+              key="links"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              role="tabpanel"
+              aria-label="Links Tab"
+              className="flex flex-col gap-4"
+            >
             <form onSubmit={handleAddLink} className="flex flex-col gap-2 p-3 rounded-xl bg-black/20 border border-white/10">
               <span className="text-xs font-semibold text-gray-300">Attach Reference Link</span>
               <input
@@ -244,13 +285,22 @@ export function ContextPanel() {
                   </div>
                 ))
               )}
-            </div>
-          </div>
-        )}
+              </div>
+            </motion.div>
+          )}
 
-        {/* TAB 3: CODE */}
-        {activeTab === 'code' && (
-          <div className="flex flex-col gap-4">
+          {/* TAB 3: CODE */}
+          {activeTab === 'code' && (
+            <motion.div 
+              key="code"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              role="tabpanel"
+              aria-label="Code Tab"
+              className="flex flex-col gap-4"
+            >
             <form onSubmit={handleAddCodeSnippet} className="flex flex-col gap-2 p-3 rounded-xl bg-black/20 border border-white/10">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-gray-300">Add Code Snippet</span>
@@ -305,13 +355,22 @@ export function ContextPanel() {
                   </div>
                 ))
               )}
-            </div>
-          </div>
-        )}
+              </div>
+            </motion.div>
+          )}
 
-        {/* TAB 4: FILES */}
-        {activeTab === 'files' && (
-          <div className="flex flex-col gap-4">
+          {/* TAB 4: FILES */}
+          {activeTab === 'files' && (
+            <motion.div 
+              key="files"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              role="tabpanel"
+              aria-label="Files Tab"
+              className="flex flex-col gap-4"
+            >
             <label className="flex flex-col items-center justify-center p-4 rounded-xl border-2 border-dashed border-white/15 bg-white/5 hover:bg-white/10 hover:border-purple-500/50 cursor-pointer transition-all">
               <Upload size={22} className="text-purple-400 mb-1" />
               <span className="text-xs font-semibold text-gray-300">Click to upload file attachment</span>
@@ -346,10 +405,13 @@ export function ContextPanel() {
                   </div>
                 ))
               )}
-            </div>
-          </div>
-        )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
-    </div>
+    </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

@@ -146,9 +146,10 @@ export function TimeTravelReplay({ editor }: TimeTravelReplayProps) {
       <button
         onClick={handleStartReplay}
         disabled={history.length === 0}
-        className="fixed bottom-4 left-20 z-50 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium glass border hover:bg-white/10 transition-all shadow-lg disabled:opacity-40 disabled:cursor-not-allowed"
+        className="tooltip fixed bottom-4 left-20 z-50 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium glass border hover:bg-white/10 transition-all shadow-lg disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}
-        title="Replay step-by-step diagram evolution"
+        aria-label="Replay step-by-step diagram evolution"
+        data-tooltip="Replay step-by-step diagram evolution"
       >
         <History size={14} className="text-purple-400" />
         Time-Travel ({history.length} steps)
@@ -170,14 +171,16 @@ export function TimeTravelReplay({ editor }: TimeTravelReplayProps) {
         <button
           onClick={() => loadSnapshotStep(currentStep - 1)}
           disabled={currentStep <= 0}
-          className="p-1.5 rounded hover:bg-white/10 disabled:opacity-40 text-gray-300"
+          aria-label="Previous step"
+          className="p-1.5 rounded hover:bg-white/10 disabled:opacity-40 text-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500"
         >
           <SkipBack size={14} />
         </button>
 
         <button
           onClick={() => setIsPlaying(!isPlaying)}
-          className="p-2 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:opacity-90 transition-opacity"
+          aria-label={isPlaying ? "Pause replay" : "Play replay"}
+          className="p-2 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500"
         >
           {isPlaying ? <Pause size={14} /> : <Play size={14} />}
         </button>
@@ -185,7 +188,8 @@ export function TimeTravelReplay({ editor }: TimeTravelReplayProps) {
         <button
           onClick={() => loadSnapshotStep(currentStep + 1)}
           disabled={currentStep >= history.length - 1}
-          className="p-1.5 rounded hover:bg-white/10 disabled:opacity-40 text-gray-300"
+          aria-label="Next step"
+          className="p-1.5 rounded hover:bg-white/10 disabled:opacity-40 text-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500"
         >
           <SkipForward size={14} />
         </button>
@@ -199,7 +203,8 @@ export function TimeTravelReplay({ editor }: TimeTravelReplayProps) {
           max={Math.max(0, history.length - 1)}
           value={currentStep}
           onChange={(e) => loadSnapshotStep(parseInt(e.target.value, 10))}
-          className="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500"
+          aria-label="Replay timeline scrubber"
+          className="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500"
         />
         <span className="text-[11px] font-mono text-gray-300 whitespace-nowrap">
           {currentStep + 1}/{history.length}
@@ -208,8 +213,9 @@ export function TimeTravelReplay({ editor }: TimeTravelReplayProps) {
 
       <button
         onClick={handleExitReplay}
-        className="p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
-        title="Exit Replay"
+        aria-label="Exit Replay"
+        data-tooltip="Exit Replay"
+        className="tooltip p-1.5 rounded hover:bg-white/10 text-gray-400 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500"
       >
         <X size={16} />
       </button>

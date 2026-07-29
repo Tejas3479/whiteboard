@@ -1,13 +1,42 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { 
   Sparkles, Users, Download, LogIn, ArrowRight, Wand2, FileCode2, 
   History, CheckCircle2, ChevronRight, Layers, ShieldCheck, Zap,
   MousePointer2, ExternalLink
 } from "lucide-react";
 import { nanoid } from "nanoid";
+import { motion, useInView } from "framer-motion";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { AnimatedBorder } from "@/components/ui/animated-border";
+
+gsap.registerPlugin(ScrollTrigger);
+
+const HeroParticles = dynamic(() => import("@/components/3d/hero-particles"), { ssr: false });
+
+const fadeUpVariant = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } }
+};
+
+const charVariant = {
+  hidden: { opacity: 0, y: 10 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4 } }
+};
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
 
 export default function LandingPage() {
   const router = useRouter();
@@ -16,21 +45,54 @@ export default function LandingPage() {
   const [activeTab, setActiveTab] = useState<"ai" | "layout" | "context" | "replay">("ai");
 
   // Simulated cursor movements for the Hero Demo Widget
-  const [cursorAlex, setCursorAlex] = useState({ x: 120, y: 110 });
-  const [cursorSarah, setCursorSarah] = useState({ x: 380, y: 220 });
+  const [cursorAlex, setCursorAlex] = useState({ x: 0, y: 0 });
+  const [cursorSarah, setCursorSarah] = useState({ x: 0, y: 0 });
+
+  const heroRef = useRef<HTMLElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCursorAlex({
-        x: 120 + Math.sin(Date.now() / 800) * 45,
-        y: 110 + Math.cos(Date.now() / 900) * 25,
+    let animationFrameId: number;
+    
+    const animateCursors = () => {
+      if (!document.hidden) {
+        const time = Date.now();
+        setCursorAlex({
+          x: Math.sin(time / 800) * 45,
+          y: Math.cos(time / 900) * 25,
+        });
+        setCursorSarah({
+          x: Math.cos(time / 700) * 50,
+          y: Math.sin(time / 1000) * 30,
+        });
+      }
+      animationFrameId = requestAnimationFrame(animateCursors);
+    };
+
+    animateCursors();
+    
+    return () => cancelAnimationFrame(animationFrameId);
+  }, []);
+
+  useEffect(() => {
+    // GSAP Parallax and Pinning
+    if (!heroRef.current || !mainRef.current) return;
+    
+    let ctx = gsap.context(() => {
+      // Parallax the background glows
+      gsap.to(".bg-glow-orbs", {
+        yPercent: 30,
+        ease: "none",
+        scrollTrigger: {
+          trigger: mainRef.current,
+          start: "top top",
+          end: "bottom top",
+          scrub: true,
+        }
       });
-      setCursorSarah({
-        x: 380 + Math.cos(Date.now() / 700) * 50,
-        y: 220 + Math.sin(Date.now() / 1000) * 30,
-      });
-    }, 50);
-    return () => clearInterval(interval);
+    });
+
+    return () => ctx.revert();
   }, []);
 
   const handleCreateBoard = () => {
@@ -52,8 +114,12 @@ export default function LandingPage() {
   return (
     <div className="relative min-h-screen w-full overflow-x-hidden flex flex-col bg-[#07070a] text-white selection:bg-purple-500/30 selection:text-purple-200">
       
+      {/* Noise Grain */}
+      <div className="bg-noise"></div>
+
       {/* Background Lighting & Grid */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-glow-orbs">
+        <HeroParticles />
         <div className="absolute inset-0 bg-grid-pattern opacity-40"></div>
         <div className="absolute top-[-20%] left-[20%] w-[600px] h-[600px] bg-purple-600/15 rounded-full blur-[140px] animate-pulse-slow"></div>
         <div className="absolute top-[40%] right-[-10%] w-[700px] h-[700px] bg-blue-600/15 rounded-full blur-[160px] animate-pulse-slow" style={{ animationDelay: "2s" }}></div>
@@ -91,50 +157,81 @@ export default function LandingPage() {
       </header>
 
       {/* Main Content */}
-      <main className="relative z-10 flex-1 container mx-auto px-6 pt-12 pb-24 flex flex-col items-center">
+      <main ref={mainRef} className="relative z-10 flex-1 container mx-auto px-6 pt-12 pb-24 flex flex-col items-center">
         
-        {/* Badge Pill */}
-        <div className="glow-pill mb-8 animate-fade-in-up">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-          <span className="text-xs font-semibold uppercase tracking-wider text-purple-200">
-            SynapseBoard 1.0 — Real-Time AI Canvas Engine
-          </span>
-          <ChevronRight size={14} className="text-purple-300" />
-        </div>
+        <motion.div 
+          ref={heroRef as any}
+          variants={staggerContainer} 
+          initial="hidden" 
+          animate="visible" 
+          className="flex flex-col items-center w-full"
+        >
+          {/* Badge Pill */}
+          <motion.div variants={fadeUpVariant} className="glow-pill mb-8">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-purple-200">
+              SynapseBoard 1.0 — Real-Time AI Canvas Engine
+            </span>
+            <ChevronRight size={14} className="text-purple-300" />
+          </motion.div>
 
-        {/* Hero Headline */}
-        <h1 className="text-5xl md:text-7xl lg:text-8xl font-extrabold tracking-tight mb-8 text-center max-w-5xl leading-[1.08] animate-fade-in-up">
-          Think Together. <br />
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-300 via-indigo-200 to-cyan-300 drop-shadow-[0_0_35px_rgba(168,85,247,0.3)]">
-            Draw Smarter.
-          </span>
-        </h1>
-
-        {/* Subtitle */}
-        <p className="text-lg md:text-xl text-gray-400 max-w-2xl text-center mb-12 leading-relaxed font-sans">
-          Production-grade architecture whiteboard with real-time multiplayer, AI diagram suggestions, 350ms Mess Cleanup layout engine, and executable context layers.
-        </p>
-
-        {/* CTA Buttons */}
-        <div className="flex flex-col sm:flex-row items-center gap-4 mb-16 w-full justify-center max-w-md">
-          <button 
-            onClick={handleCreateBoard}
-            className="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 text-white font-semibold text-lg shadow-[0_0_40px_rgba(147,51,234,0.35)] hover:shadow-[0_0_60px_rgba(147,51,234,0.6)] hover:scale-[1.03] transition-all flex items-center justify-center gap-3 group"
+          {/* Hero Headline */}
+          <motion.h1 
+            variants={staggerContainer}
+            className="text-5xl md:text-7xl lg:text-8xl font-extrabold tracking-tight mb-8 text-center max-w-5xl leading-[1.08]"
           >
-            Launch Canvas <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-          </button>
-          <button 
-            onClick={() => setShowJoinModal(true)}
-            className="w-full sm:w-auto px-8 py-4 rounded-xl bg-white/5 border border-white/10 text-white font-semibold text-lg hover:bg-white/10 hover:border-white/20 transition-all backdrop-blur-xl flex items-center justify-center gap-2"
-          >
-            <Users size={18} className="text-purple-400" /> Join Existing Room
-          </button>
-        </div>
+            <div className="inline-block">
+              {"Think Together.".split("").map((char, index) => (
+                <motion.span key={`t1-${index}`} variants={charVariant} className="inline-block">
+                  {char === " " ? "\u00A0" : char}
+                </motion.span>
+              ))}
+            </div>
+            <br />
+            <div className="inline-block bg-clip-text text-transparent bg-gradient-to-r from-purple-300 via-indigo-200 to-cyan-300 drop-shadow-[0_0_35px_rgba(168,85,247,0.3)]">
+              {"Draw Smarter.".split("").map((char, index) => (
+                <motion.span key={`t2-${index}`} variants={charVariant} className="inline-block">
+                  {char === " " ? "\u00A0" : char}
+                </motion.span>
+              ))}
+            </div>
+          </motion.h1>
+
+          {/* Subtitle */}
+          <motion.p variants={fadeUpVariant} className="text-lg md:text-xl text-gray-400 max-w-2xl text-center mb-12 leading-relaxed font-sans">
+            Production-grade architecture whiteboard with real-time multiplayer, AI diagram suggestions, 350ms Mess Cleanup layout engine, and executable context layers.
+          </motion.p>
+
+          {/* CTA Buttons */}
+          <motion.div variants={fadeUpVariant} className="flex flex-col sm:flex-row items-center gap-4 mb-16 w-full justify-center max-w-md">
+            <button 
+              onClick={handleCreateBoard}
+              className="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 text-white font-semibold text-lg shadow-[0_0_40px_rgba(147,51,234,0.35)] hover:shadow-[0_0_60px_rgba(147,51,234,0.6)] hover:scale-[1.03] transition-all flex items-center justify-center gap-3 group relative overflow-hidden"
+            >
+              <span className="relative z-10 flex items-center gap-3">
+                Launch Canvas <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+              </span>
+              <div className="absolute inset-0 bg-white/20 blur-md transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+            </button>
+            <button 
+              onClick={() => setShowJoinModal(true)}
+              className="w-full sm:w-auto px-8 py-4 rounded-xl bg-white/5 border border-white/10 text-white font-semibold text-lg hover:bg-white/10 hover:border-white/20 transition-all backdrop-blur-xl flex items-center justify-center gap-2 spotlight-hover"
+            >
+              <Users size={18} className="text-purple-400" /> Join Existing Room
+            </button>
+          </motion.div>
+        </motion.div>
 
         {/* ===================================================
             HERO DEMO WIDGET (Simulated Live Canvas Preview)
            =================================================== */}
-        <div className="w-full max-w-5xl glow-card p-2 md:p-4 mb-28 overflow-hidden shadow-2xl relative">
+        <motion.div 
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.4 }}
+          className="w-full max-w-5xl mb-28"
+        >
+          <AnimatedBorder className="glow-card p-2 md:p-4 overflow-hidden shadow-2xl relative w-full h-full">
           
           {/* Top Bar inside Demo Box */}
           <div className="w-full h-10 border-b border-white/10 bg-[#0d0d16] rounded-t-lg px-4 flex items-center justify-between text-xs text-gray-400">
@@ -157,45 +254,45 @@ export default function LandingPage() {
             
             {/* SVG Connecting Lines */}
             <svg className="absolute inset-0 w-full h-full pointer-events-none z-0">
-              <line x1="160" y1="160" x2="360" y2="160" stroke="rgba(168, 85, 247, 0.4)" strokeWidth="2" strokeDasharray="6 6" />
-              <line x1="480" y1="160" x2="680" y2="160" stroke="rgba(59, 130, 246, 0.4)" strokeWidth="2" />
+              <line x1="15%" y1="35%" x2="50%" y2="35%" stroke="rgba(168, 85, 247, 0.4)" strokeWidth="2" strokeDasharray="6 6" />
+              <line x1="50%" y1="35%" x2="85%" y2="35%" stroke="rgba(59, 130, 246, 0.4)" strokeWidth="2" />
             </svg>
 
             {/* Canvas Node 1: Client App */}
-            <div className="absolute left-[60px] top-[120px] w-44 h-24 rounded-xl bg-purple-950/40 border border-purple-500/40 backdrop-blur-md p-3 flex flex-col justify-between shadow-[0_0_20px_rgba(168,85,247,0.15)] z-10 transition-all hover:scale-105">
+            <div className="absolute left-[5%] md:left-[10%] top-[25%] w-36 md:w-44 h-24 rounded-xl bg-purple-950/40 border border-purple-500/40 backdrop-blur-md p-3 flex flex-col justify-between shadow-[0_0_20px_rgba(168,85,247,0.15)] z-10 transition-all hover:scale-105">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-purple-300">Client Web App</span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-200">React 19</span>
+                <span className="text-xs font-semibold text-purple-300">Client App</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-200 hidden md:block">React</span>
               </div>
-              <span className="text-[11px] text-gray-400 font-mono">Next.js App Router</span>
+              <span className="text-[11px] text-gray-400 font-mono hidden md:block">Next.js</span>
               <div className="absolute -top-3 -right-2 bg-purple-600 text-[10px] font-bold px-2 py-0.5 rounded-full text-white shadow-lg flex items-center gap-1">
                 <span>📎 2 Notes</span>
               </div>
             </div>
 
             {/* Canvas Node 2: API Gateway */}
-            <div className="absolute left-[300px] top-[120px] w-48 h-24 rounded-xl bg-indigo-950/40 border border-indigo-500/40 backdrop-blur-md p-3 flex flex-col justify-between shadow-[0_0_20px_rgba(99,102,241,0.15)] z-10 transition-all hover:scale-105">
+            <div className="absolute left-[50%] -translate-x-1/2 top-[25%] w-40 md:w-48 h-24 rounded-xl bg-indigo-950/40 border border-indigo-500/40 backdrop-blur-md p-3 flex flex-col justify-between shadow-[0_0_20px_rgba(99,102,241,0.15)] z-10 transition-all hover:scale-105">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-indigo-300">API Gateway</span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-200">Express</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-200 hidden md:block">Express</span>
               </div>
-              <span className="text-[11px] text-gray-400 font-mono">REST & WebSocket</span>
+              <span className="text-[11px] text-gray-400 font-mono hidden md:block">REST & WS</span>
               <div className="absolute -top-3 -right-2 bg-blue-600 text-[10px] font-bold px-2 py-0.5 rounded-full text-white shadow-lg flex items-center gap-1">
                 <span>🤖 AI Suggestion</span>
               </div>
             </div>
 
             {/* Canvas Node 3: Postgres Database */}
-            <div className="absolute right-[60px] top-[120px] w-44 h-24 rounded-xl bg-emerald-950/40 border border-emerald-500/40 backdrop-blur-md p-3 flex flex-col justify-between shadow-[0_0_20px_rgba(16,185,129,0.15)] z-10 transition-all hover:scale-105">
+            <div className="absolute right-[5%] md:right-[10%] top-[25%] w-36 md:w-44 h-24 rounded-xl bg-emerald-950/40 border border-emerald-500/40 backdrop-blur-md p-3 flex flex-col justify-between shadow-[0_0_20px_rgba(16,185,129,0.15)] z-10 transition-all hover:scale-105">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-emerald-300">Postgres DB</span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-200">Supabase</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-200 hidden md:block">Supabase</span>
               </div>
-              <span className="text-[11px] text-gray-400 font-mono">Persistence Store</span>
+              <span className="text-[11px] text-gray-400 font-mono hidden md:block">Persistence</span>
             </div>
 
             {/* AI Ghost Shape Preview Overlay */}
-            <div className="absolute bottom-[50px] left-[300px] w-48 h-20 rounded-xl border-2 border-dashed border-cyan-400/50 bg-cyan-950/20 backdrop-blur-sm p-3 flex items-center justify-center animate-pulse z-10">
+            <div className="absolute bottom-[15%] left-[50%] -translate-x-1/2 w-48 h-20 rounded-xl border-2 border-dashed border-cyan-400/50 bg-cyan-950/20 backdrop-blur-sm p-3 flex items-center justify-center animate-pulse z-10">
               <span className="text-xs font-medium text-cyan-300 flex items-center gap-1.5">
                 <Sparkles size={14} /> AI Ghost: Redis Cache
               </span>
@@ -204,7 +301,7 @@ export default function LandingPage() {
             {/* Simulated Live Cursor 1: Alex */}
             <div 
               className="absolute z-30 transition-all duration-75 pointer-events-none flex items-center gap-1"
-              style={{ left: `${cursorAlex.x}px`, top: `${cursorAlex.y}px` }}
+              style={{ left: `calc(15% + ${cursorAlex.x}px)`, top: `calc(35% + ${cursorAlex.y}px)` }}
             >
               <MousePointer2 size={18} className="text-pink-400 fill-pink-400 drop-shadow-md" />
               <span className="px-2 py-0.5 rounded-full bg-pink-500 text-white text-[10px] font-semibold shadow-md whitespace-nowrap">
@@ -215,7 +312,7 @@ export default function LandingPage() {
             {/* Simulated Live Cursor 2: Sarah */}
             <div 
               className="absolute z-30 transition-all duration-75 pointer-events-none flex items-center gap-1"
-              style={{ left: `${cursorSarah.x}px`, top: `${cursorSarah.y}px` }}
+              style={{ left: `calc(60% + ${cursorSarah.x}px)`, top: `calc(45% + ${cursorSarah.y}px)` }}
             >
               <MousePointer2 size={18} className="text-cyan-400 fill-cyan-400 drop-shadow-md" />
               <span className="px-2 py-0.5 rounded-full bg-cyan-500 text-black text-[10px] font-bold shadow-md whitespace-nowrap">
@@ -223,12 +320,19 @@ export default function LandingPage() {
               </span>
             </div>
           </div>
-        </div>
+          </AnimatedBorder>
+        </motion.div>
 
         {/* ===================================================
             INTERACTIVE FEATURE SHOWCASE TABS
            =================================================== */}
-        <div className="w-full max-w-5xl mb-28">
+        <motion.div 
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.6 }}
+          className="w-full max-w-5xl mb-28"
+        >
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-white via-purple-200 to-indigo-300">
               Engineered for Modern Systems
@@ -386,18 +490,23 @@ export default function LandingPage() {
                 </div>
               </div>
             )}
-          </div>
-        </div>
+          </AnimatedBorder>
+        </motion.div>
 
         {/* ===================================================
             STATS & METRICS BAR
            =================================================== */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 w-full max-w-5xl mb-24">
-          <StatCard number="350ms" label="Auto-Align Layout" icon={<Zap className="text-yellow-400" />} />
-          <StatCard number="100%" label="Type-Safe Codebase" icon={<ShieldCheck className="text-emerald-400" />} />
-          <StatCard number="Instant" label="Mermaid Export" icon={<FileCode2 className="text-blue-400" />} />
-          <StatCard number="Live" label="Multiplayer Sync" icon={<Users className="text-purple-400" />} />
-        </div>
+        <motion.div 
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          className="grid grid-cols-2 md:grid-cols-4 gap-6 w-full max-w-5xl mb-24"
+        >
+          <StatCard number="350" suffix="ms" label="Auto-Align Layout" icon={<Zap className="text-yellow-400" />} />
+          <StatCard number="100" suffix="%" label="Type-Safe Codebase" icon={<ShieldCheck className="text-emerald-400" />} />
+          <StatCard number="0" prefix="Instant" label="Mermaid Export" icon={<FileCode2 className="text-blue-400" />} noCount />
+          <StatCard number="0" prefix="Live" label="Multiplayer Sync" icon={<Users className="text-purple-400" />} noCount />
+        </motion.div>
 
       </main>
 
@@ -470,12 +579,46 @@ export default function LandingPage() {
   );
 }
 
-function StatCard({ number, label, icon }: { number: string; label: string; icon: React.ReactNode }) {
+const StatCard = React.memo(function StatCard({ number, suffix = "", prefix = "", label, icon, noCount = false }: { number: string | number; suffix?: string; prefix?: string; label: string; icon: React.ReactNode, noCount?: boolean }) {
+  const [count, setCount] = useState(noCount ? number : 0);
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true });
+
+  useEffect(() => {
+    if (isInView && !noCount) {
+      let start = 0;
+      const end = parseInt(number.toString());
+      if (isNaN(end)) return;
+      
+      const duration = 2000;
+      const startTime = Date.now();
+      
+      const animate = () => {
+        const now = Date.now();
+        const progress = Math.min((now - startTime) / duration, 1);
+        // easeOutQuart
+        const ease = 1 - Math.pow(1 - progress, 4);
+        
+        setCount(Math.floor(ease * end));
+        
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        }
+      };
+      
+      requestAnimationFrame(animate);
+    }
+  }, [isInView, number, noCount]);
+
   return (
-    <div className="glow-card p-6 flex flex-col items-center text-center">
-      <div className="mb-2 p-2 rounded-lg bg-white/5">{icon}</div>
-      <span className="text-2xl md:text-3xl font-extrabold text-white mb-1 font-mono">{number}</span>
-      <span className="text-xs text-gray-400 font-medium">{label}</span>
-    </div>
+    <AnimatedBorder>
+      <div ref={ref} className="glow-card p-6 flex flex-col items-center text-center w-full h-full min-h-[140px]">
+        <div className="mb-2 p-2 rounded-lg bg-white/5">{icon}</div>
+        <span className="text-2xl md:text-3xl font-extrabold text-white mb-1 font-mono">
+          {prefix}{noCount ? "" : count}{suffix}
+        </span>
+        <span className="text-xs text-gray-400 font-medium">{label}</span>
+      </div>
+    </AnimatedBorder>
   );
-}
+});
